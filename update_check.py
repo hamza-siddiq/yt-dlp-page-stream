@@ -9,7 +9,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from urllib.request import Request, urlopen
 
 _CACHE_DIR = Path.home() / ".cache" / "yt-dlp-page-stream"
@@ -122,23 +122,11 @@ def _run_pip_commands(commands: List[str]) -> None:
         subprocess.run(cmd, shell=True, check=False)
 
 
-def maybe_notify_updates() -> None:
-    try:
-        _maybe_notify_updates()
-    except Exception:
-        pass
-
-
-def _maybe_notify_updates() -> None:
-    if _env_truthy("YT_DLP_PAGE_STREAM_SKIP_UPDATE_CHECK"):
-        return
-    if not sys.stderr.isatty():
-        return
-    if _cache_fresh():
-        return
-
+def _gather_updates() -> Tuple[List[str], List[str], bool]:
+    """Return (messages, pip_commands, needs_git_pull)."""
     messages: List[str] = []
     pip_commands: List[str] = []
+    needs_git_pull = False
 
     installed_ytdlp = _installed_version("yt-dlp")
     latest_ytdlp = _pypi_latest_ytdlp()
@@ -157,6 +145,7 @@ def _maybe_notify_updates() -> None:
     latest_pkg = _github_latest_pkg()
     if installed_pkg and latest_pkg and _version_lt(installed_pkg, latest_pkg):
         if _is_git_clone():
+            needs_git_pull = True
             upgrade = "git pull && pip install -e ."
             pip_commands.append("pip install -e .")
         else:
@@ -167,20 +156,64 @@ def _maybe_notify_updates() -> None:
             f"  {upgrade}"
         )
 
+    return messages, pip_commands, needs_git_pull
+
+
+def run_update_flow(*, force: bool, prompt: bool) -> int:
+    """
+    Check for updates. If prompt and updates exist, ask to upgrade.
+
+    Returns 0 on success / nothing to do / user declined; 1 if TTY required but missing.
+    """
+    if force and not sys.stderr.isatty():
+        print(
+            "yt-dlp-ps --update requires an interactive terminal.",
+            file=sys.stderr,
+        )
+        return 1
+
+    if not force:
+        if _env_truthy("YT_DLP_PAGE_STREAM_SKIP_UPDATE_CHECK"):
+            return 0
+        if not sys.stderr.isatty():
+            return 0
+        if _cache_fresh():
+            return 0
+
+    messages, pip_commands, needs_git_pull = _gather_updates()
     _write_cache()
 
     if not messages:
-        return
+        if force or prompt:
+            print("All up to date.", file=sys.stderr)
+        return 0
 
     print("\nUpdates available:", file=sys.stderr)
     for msg in messages:
         print(msg, file=sys.stderr)
         print(file=sys.stderr)
 
-    if _env_truthy("YT_DLP_PAGE_STREAM_UPDATE_PROMPT") and pip_commands:
+    should_prompt = prompt or _env_truthy("YT_DLP_PAGE_STREAM_UPDATE_PROMPT")
+    if should_prompt and pip_commands:
         try:
-            answer = input("Upgrade now with pip? [y/N] ").strip().lower()
+            answer = input("Upgrade now? [y/N] ").strip().lower()
         except (EOFError, KeyboardInterrupt):
-            return
+            print(file=sys.stderr)
+            return 0
         if answer in ("y", "yes"):
+            if needs_git_pull:
+                print(
+                    "Run git pull in your clone first, then re-run --update if needed.",
+                    file=sys.stderr,
+                )
             _run_pip_commands(pip_commands)
+        return 0
+
+    return 0
+
+
+def maybe_notify_updates() -> None:
+    try:
+        run_update_flow(force=False, prompt=False)
+    except Exception:
+        pass

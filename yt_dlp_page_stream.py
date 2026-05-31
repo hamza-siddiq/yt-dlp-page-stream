@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 _PKG_ROOT = Path(__file__).resolve().parent
+_OUR_UPDATE_FLAG = "--update"
 
 
 def _ensure_package_on_syspath() -> None:
@@ -20,11 +21,41 @@ def _ensure_package_on_syspath() -> None:
         sys.path.insert(0, root)
 
 
+def _consume_update_flag(argv: list[str]) -> bool:
+    found = False
+    stripped: list[str] = []
+    for arg in argv:
+        if arg == _OUR_UPDATE_FLAG:
+            found = True
+        else:
+            stripped.append(arg)
+    argv[:] = stripped
+    return found
+
+
+def _argv_is_standalone(argv: list[str]) -> bool:
+    """True when only the program name remains (no URLs or yt-dlp flags)."""
+    return len(argv) <= 1
+
+
 def main() -> None:
     _ensure_package_on_syspath()
-    from update_check import maybe_notify_updates
 
-    maybe_notify_updates()
+    argv = sys.argv[:]
+    do_update = _consume_update_flag(argv)
+    sys.argv = argv
+
+    from update_check import maybe_notify_updates, run_update_flow
+
+    if do_update:
+        code = run_update_flow(force=True, prompt=True)
+        if code != 0:
+            sys.exit(code)
+        if _argv_is_standalone(argv):
+            sys.exit(0)
+    else:
+        maybe_notify_updates()
+
     try:
         from yt_dlp import main as ytdlp_main
     except ImportError:
