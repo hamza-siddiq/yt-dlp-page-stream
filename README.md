@@ -2,6 +2,8 @@
 
 **yt-dlp plugin** — extract and download **HLS (`.m3u8`)** and **MP4** streams from **video page URLs**, with `Referer` / `Origin` headers so tokenized CDNs do not return HTTP 428.
 
+**`yt-dlp-ps` is full yt-dlp** (all built-in sites) plus this plugin. URLs without a supported page_stream embed fall through to normal yt-dlp extractors (YouTube, etc.).
+
 - Repository: [github.com/hamza-siddiq/yt-dlp-page-stream](https://github.com/hamza-siddiq/yt-dlp-page-stream)
 - Requires: Python 3.8+ ([yt-dlp](https://github.com/yt-dlp/yt-dlp) installed automatically with `pip install -e .`)
 - Changelog: [CHANGELOG.md](CHANGELOG.md) (formerly **m3u8-link-extractor**)
@@ -35,9 +37,10 @@ flowchart LR
   StreamURL --> Download[yt-dlp download with Referer and Origin]
 ```
 
-1. You pass a **video page URL** to yt-dlp (or the CLI extracts stream URLs in batch).
-2. The plugin finds the embedded player and the direct **stream URL**.
-3. yt-dlp downloads with the same **Referer** and **Origin** the browser would send.
+1. You pass a URL to **`yt-dlp-ps`** (or the CLI extracts stream URLs in batch).
+2. If the page has a supported embed, the **page_stream** plugin resolves the stream and sets headers.
+3. Otherwise, yt-dlp uses its **usual extractors** for that site.
+4. Downloads use the correct **Referer** and **Origin** when page_stream handles the URL.
 
 **Why HTTP 428 happens without this plugin:** feeding a bare CDN URL (e.g. `cdn.example.com/...`) to yt-dlp’s **generic** extractor sends no Referer; many CDNs respond with **428 Precondition Required**.
 

@@ -4,6 +4,22 @@ Problem → cause → fix for **yt-dlp-page-stream**.
 
 ---
 
+## YouTube or other sites (not page_stream)
+
+**Symptom**
+
+You use **`yt-dlp-ps`** for YouTube, Vimeo, or another major site and expect normal yt-dlp behavior.
+
+**Cause**
+
+Older versions claimed every HTTP URL for **page_stream** and failed without trying built-in extractors.
+
+**Fix**
+
+Upgrade to the latest plugin. **`yt-dlp-ps` is full yt-dlp**: if the page has no snstr-style embed, built-in extractors run automatically. You do not need a separate `yt-dlp` binary when `pip install -e .` is used.
+
+---
+
 ## HTTP 428 Precondition Required
 
 **Symptom**

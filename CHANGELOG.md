@@ -2,6 +2,13 @@
 
 All notable changes to **yt-dlp-page-stream** are documented here.
 
+## [2.1.4] - 2026-05-31
+
+### Fixed
+
+- **page_stream** no longer blocks other sites: `suitable()` requires a snstr embed; otherwise yt-dlp uses built-in extractors (YouTube, etc.)
+- If extraction fails after a positive `suitable()` check, raise `ExtractorError(expected=True)` so yt-dlp can fall back
+
 ## [2.1.3] - 2026-05-31
 
 ### Added
