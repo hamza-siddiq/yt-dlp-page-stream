@@ -3,7 +3,53 @@ import argparse
 import json
 import os
 
+from cli_ui import get_console, print_msg
 from extractor.core import extract_media_url
+
+
+def _extract_urls(urls, base_url):
+    results = []
+    console = get_console()
+
+    if console:
+        from rich.progress import (
+            BarColumn,
+            Progress,
+            SpinnerColumn,
+            TaskProgressColumn,
+            TextColumn,
+        )
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Extracting streams", total=len(urls))
+            for url in urls:
+                progress.update(task, description=url[:80])
+                extracted = extract_media_url(url, base_url)
+                if extracted:
+                    results.append(extracted)
+                    progress.console.print(
+                        f"  [green]✓[/green] {extracted['url']}"
+                    )
+                else:
+                    progress.console.print(f"  [red]✗[/red] {url}")
+                progress.advance(task)
+    else:
+        for i, url in enumerate(urls, 1):
+            print(f"Processing {i}/{len(urls)}: {url}")
+            extracted = extract_media_url(url, base_url)
+            if extracted:
+                results.append(extracted)
+                print(f" -> Found: {extracted['url']}")
+            else:
+                print(" -> Failed to extract.")
+
+    return results
 
 
 def main():
@@ -38,27 +84,22 @@ def main():
     output_file = args.output
 
     if not os.path.exists(input_file):
-        print(f"Input file '{input_file}' does not exist.")
+        print_msg(f"Input file '{input_file}' does not exist.", style="red")
         return
 
     with open(input_file, "r") as f:
         urls = [line.strip() for line in f if line.strip()]
 
     if not urls:
-        print(f"No URLs found in {input_file}.")
+        print_msg(f"No URLs found in {input_file}.", style="yellow")
         return
 
-    print(f"Found {len(urls)} URLs in {input_file}. Converting...")
+    print_msg(
+        f"Found {len(urls)} URLs in {input_file}. Converting...",
+        style="bold",
+    )
 
-    results = []
-    for i, url in enumerate(urls, 1):
-        print(f"Processing {i}/{len(urls)}: {url}")
-        extracted = extract_media_url(url, args.base_url)
-        if extracted:
-            results.append(extracted)
-            print(f" -> Found: {extracted['url']}")
-        else:
-            print(" -> Failed to extract.")
+    results = _extract_urls(urls, args.base_url)
 
     if results:
         with open(output_file, "a") as f:
@@ -67,14 +108,17 @@ def main():
                     f.write(json.dumps(item, separators=(",", ":")) + "\n")
                 else:
                     f.write(item["url"] + "\n")
-        print(f"\nSuccessfully added {len(results)} links to {output_file}.")
+        print_msg(
+            f"Successfully added {len(results)}/{len(urls)} links to {output_file}.",
+            style="bold green",
+        )
 
         if not args.keep_input:
             with open(input_file, "w"):
                 pass
-            print(f"Cleared {input_file}.")
+            print_msg(f"Cleared {input_file}.", style="dim")
     else:
-        print("\nNo links were successfully converted.")
+        print_msg("No links were successfully converted.", style="yellow")
 
 
 if __name__ == "__main__":
