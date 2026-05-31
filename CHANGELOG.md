@@ -2,6 +2,16 @@
 
 All notable changes to **yt-dlp-page-stream** are documented here.
 
+## [2.1.3] - 2026-05-31
+
+### Added
+
+- **`yt-dlp-ps --update`** — force version check (bypass 24h cache), prompt to upgrade yt-dlp and this plugin via pip
+
+### Changed
+
+- Entry module renamed `page_stream_yt_dlp.py` → `yt_dlp_page_stream.py`
+
 ## [2.1.2] - 2026-05-31
 
 ### Added

@@ -143,10 +143,24 @@ See also: [yt-dlp plugin documentation](https://github.com/yt-dlp/yt-dlp#plugins
 
 When you run **`yt-dlp-ps`** in an interactive terminal, it may check once per 24 hours whether **yt-dlp** (PyPI) or this package (GitHub releases) has a newer version and print upgrade hints. Checks are skipped in CI, pipes, and non-TTY sessions.
 
+**Force check and upgrade (interactive):**
+
+```bash
+yt-dlp-ps --update
+```
+
+Shows what is outdated and asks **`Upgrade now? [y/N]`**. On **yes**, runs `pip install -U yt-dlp` and/or `pip install -e .` (for git clones, run **`git pull`** in the repo first). Use with downloads to check before a batch:
+
+```bash
+yt-dlp-ps --update --ignore-errors -a urls.txt
+```
+
+This is **not** the same as **`yt-dlp -U`**, which only updates yt-dlp itself.
+
 | Environment variable | Effect |
 |---------------------|--------|
-| `YT_DLP_PAGE_STREAM_SKIP_UPDATE_CHECK=1` | Never check |
-| `YT_DLP_PAGE_STREAM_UPDATE_PROMPT=1` | If updates are found, ask whether to run suggested `pip` commands |
+| `YT_DLP_PAGE_STREAM_SKIP_UPDATE_CHECK=1` | Never background-check |
+| `YT_DLP_PAGE_STREAM_UPDATE_PROMPT=1` | Background check: ask before `pip` when updates are found |
 
 ---
 
