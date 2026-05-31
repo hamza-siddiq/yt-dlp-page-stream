@@ -160,6 +160,8 @@ yt-dlp-ps --update --ignore-errors -a urls.txt
 
 This is **not** the same as **`yt-dlp -U`**, which only updates yt-dlp itself.
 
+In a terminal, `--update` uses **Rich** panels and a confirm prompt. Download jobs still use **yt-dlp’s own progress bar** (not replaced).
+
 | Environment variable | Effect |
 |---------------------|--------|
 | `YT_DLP_PAGE_STREAM_SKIP_UPDATE_CHECK=1` | Never background-check |
@@ -216,7 +218,7 @@ yt-dlp-ps --ies page_stream "https://yoursite.com/video/123/"
 
 ## CLI: extract stream URLs
 
-Batch-extract direct stream URLs without downloading (stdlib only):
+Batch-extract direct stream URLs without downloading. In a terminal, **`page-stream-extract`** shows a **Rich** progress bar and per-URL status; output is plain text when piped or non-interactive.
 
 ```bash
 page-stream-extract -i urls.txt -o streams.txt

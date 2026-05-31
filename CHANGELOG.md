@@ -2,6 +2,17 @@
 
 All notable changes to **yt-dlp-page-stream** are documented here.
 
+## [2.2.0] - 2026-05-31
+
+### Added
+
+- **Rich** terminal UX: progress bar for `page-stream-extract`; panels and confirm for `yt-dlp-ps --update`
+- [`cli_ui.py`](cli_ui.py) helpers with plain-text fallback when not a TTY
+
+### Note
+
+- Download progress remains **yt-dlp’s native bar**; Rich is not used during `yt-dlp-ps` downloads
+
 ## [2.1.4] - 2026-05-31
 
 ### Fixed
