@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yt-dlp-page-stream"
+version = "2.0.0"
+description = "yt-dlp plugin and CLI: extract and download HLS/MP4 streams from video pages with correct Referer headers"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+keywords = ["yt-dlp", "yt-dlp-plugin", "m3u8", "hls", "mp4", "referer", "page-stream"]
+
+[project.urls]
+Homepage = "https://github.com/hamza-siddiq/yt-dlp-page-stream"
+Repository = "https://github.com/hamza-siddiq/yt-dlp-page-stream"
+Issues = "https://github.com/hamza-siddiq/yt-dlp-page-stream/issues"
+
+[project.scripts]
+page-stream-extract = "convert_links:main"
+convert-links = "convert_links:main"
+
+[tool.setuptools]
+py-modules = ["convert_links"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["extractor*", "yt_dlp_plugins*"]
+
+[tool.setuptools.package-data]
+yt_dlp_plugins = ["**/*.py"]
