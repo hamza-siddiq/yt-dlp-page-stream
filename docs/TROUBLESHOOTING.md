@@ -27,7 +27,7 @@ The CDN expects a **Referer** (and often **Origin**) from the video page. yt-dlp
 Download from the **video page URL**:
 
 ```bash
-yt-dlp-page-stream "https://yoursite.com/video/123/"
+yt-dlp-ps "https://yoursite.com/video/123/"
 ```
 
 **Fix — CDN URL only**
@@ -35,7 +35,7 @@ yt-dlp-page-stream "https://yoursite.com/video/123/"
 Pass the page URL as referer:
 
 ```bash
-yt-dlp-page-stream --extractor-args "tokenized_cdn:referer=https://yoursite.com/video/123/" \
+yt-dlp-ps --extractor-args "tokenized_cdn:referer=https://yoursite.com/video/123/" \
   "https://cdn.example.com/file.mp4?token=TOKEN&expires=EXPIRES"
 ```
 
@@ -85,7 +85,7 @@ Or debug shows:
 After `pip install -e .` (installs yt-dlp as a dependency):
 
 ```bash
-yt-dlp-page-stream -a urls.txt
+yt-dlp-ps -a urls.txt
 # or:
 python3 -m yt_dlp -a urls.txt
 ```
@@ -99,7 +99,7 @@ If you keep Homebrew’s `yt-dlp`:
 Confirm with:
 
 ```bash
-yt-dlp-page-stream -v --simulate "https://yoursite.com/video/123/" 2>&1 | head -5
+yt-dlp-ps -v --simulate "https://yoursite.com/video/123/" 2>&1 | head -5
 ```
 
 You should see `[page_stream]` (or a clear `page_stream` error), not `[generic]`.

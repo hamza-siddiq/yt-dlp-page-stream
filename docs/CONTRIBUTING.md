@@ -34,7 +34,7 @@ python3 -m yt_dlp -v --simulate "https://example.com/" 2>&1 | grep -F "Extractor
 Test extraction (no download):
 
 ```bash
-yt-dlp-page-stream --simulate "https://yoursite.com/video/123/"
+yt-dlp-ps --simulate "https://yoursite.com/video/123/"
 ```
 
 Test CLI:

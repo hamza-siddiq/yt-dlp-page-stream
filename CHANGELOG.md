@@ -2,6 +2,16 @@
 
 All notable changes to **yt-dlp-page-stream** are documented here.
 
+## [2.1.2] - 2026-05-31
+
+### Added
+
+- **`yt-dlp-ps`** — short download command (page stream)
+
+### Changed
+
+- Primary CLI is now `yt-dlp-ps`; `yt-dlp-page-stream` and `page-stream-yt-dlp` remain as aliases
+
 ## [2.1.1] - 2026-05-31
 
 ### Fixed

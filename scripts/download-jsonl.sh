@@ -13,15 +13,17 @@
 #   ./scripts/download-jsonl.sh streams.jsonl
 #   ./scripts/download-jsonl.sh streams.jsonl -o "%(id)s.%(ext)s" -f best
 #
-# Extra arguments are passed through to yt-dlp-page-stream after the built-in referer headers.
+# Extra arguments are passed through to yt-dlp-ps after the built-in referer headers.
 set -euo pipefail
 
-YTDLP_CMD="yt-dlp-page-stream"
+YTDLP_CMD="yt-dlp-ps"
 if ! command -v "$YTDLP_CMD" >/dev/null 2>&1; then
-  if command -v page-stream-yt-dlp >/dev/null 2>&1; then
+  if command -v yt-dlp-page-stream >/dev/null 2>&1; then
+    YTDLP_CMD="yt-dlp-page-stream"
+  elif command -v page-stream-yt-dlp >/dev/null 2>&1; then
     YTDLP_CMD="page-stream-yt-dlp"
   else
-    echo "Install the plugin first: pip install -e .  (provides yt-dlp-page-stream)" >&2
+    echo "Install the plugin first: pip install -e .  (provides yt-dlp-ps)" >&2
     exit 1
   fi
 fi

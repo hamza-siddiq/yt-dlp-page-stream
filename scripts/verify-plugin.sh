@@ -7,7 +7,7 @@ output="$({ yt-dlp -v --simulate "https://example.com/" 2>&1 || true; })"
 
 if echo "$output" | grep -qF "Plugin directories: none"; then
   echo "FAIL: yt-dlp did not load any plugin directory." >&2
-  echo "Use: yt-dlp-page-stream  OR  python3 -m yt_dlp  OR  scripts/yt-dlp-with-plugin.sh" >&2
+  echo "Use: yt-dlp-ps  OR  python3 -m yt_dlp  OR  scripts/yt-dlp-with-plugin.sh" >&2
   echo "Bare 'yt-dlp' often uses a different Python than 'pip install -e .'." >&2
   exit 1
 fi
@@ -23,4 +23,4 @@ if ! echo "$output" | grep -qF "PageStreamIE"; then
 fi
 
 echo "$output" | grep -F "Extractor Plugins"
-echo "OK: plugin loaded. For downloads use yt-dlp-page-stream (not bare yt-dlp unless same Python)."
+echo "OK: plugin loaded. For downloads use yt-dlp-ps (not bare yt-dlp unless same Python)."

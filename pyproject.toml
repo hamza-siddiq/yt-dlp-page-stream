@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "yt-dlp-page-stream"
-version = "2.1.1"
+version = "2.1.2"
 description = "yt-dlp plugin and CLI: extract and download HLS/MP4 streams from video pages with correct Referer headers"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -18,6 +18,7 @@ Repository = "https://github.com/hamza-siddiq/yt-dlp-page-stream"
 Issues = "https://github.com/hamza-siddiq/yt-dlp-page-stream/issues"
 
 [project.scripts]
+yt-dlp-ps = "page_stream_yt_dlp:main"
 yt-dlp-page-stream = "page_stream_yt_dlp:main"
 page-stream-yt-dlp = "page_stream_yt_dlp:main"
 page-stream-extract = "convert_links:main"
