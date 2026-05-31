@@ -2,8 +2,13 @@ import hashlib
 from urllib.parse import parse_qs, urlparse
 
 from yt_dlp.extractor.common import InfoExtractor
+from yt_dlp.utils import ExtractorError
 
-from extractor.core import extract_media_url, no_embed_hint
+from extractor.core import (
+    extract_media_url,
+    no_embed_hint,
+    page_has_video_stream_embed,
+)
 
 
 def _media_headers(referer, origin, user_agent):
@@ -31,12 +36,14 @@ class PageStreamIE(InfoExtractor):
 
     @classmethod
     def suitable(cls, url):
-        return super().suitable(url)
+        if not super().suitable(url):
+            return False
+        return page_has_video_stream_embed(url)
 
     def _real_extract(self, url):
         data = extract_media_url(url)
         if not data:
-            self.raise_no_formats(no_embed_hint(url))
+            raise ExtractorError(no_embed_hint(url), expected=True)
 
         media_url = data["url"]
         video_id = _stable_id(url)
