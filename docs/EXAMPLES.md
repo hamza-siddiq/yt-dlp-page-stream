@@ -1,6 +1,6 @@
 # Examples
 
-Copy-paste recipes for **yt-dlp-page-stream** (command: `yt-dlp-ps`).
+Recipes use **`yt-dlp-ps`** (yt-dlp with this plugin). Copy-paste examples for **yt-dlp-page-stream** below.
 
 ---
 
