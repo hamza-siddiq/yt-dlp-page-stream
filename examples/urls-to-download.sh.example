@@ -19,5 +19,5 @@ while IFS= read -r page_url || [[ -n "$page_url" ]]; do
   [[ -z "$page_url" ]] && continue
   [[ "$page_url" =~ ^# ]] && continue
   echo "Downloading: $page_url"
-  yt-dlp -o "%(title)s.%(ext)s" "$page_url"
+  yt-dlp-page-stream -o "%(title)s.%(ext)s" "$page_url"
 done < "$url_file"

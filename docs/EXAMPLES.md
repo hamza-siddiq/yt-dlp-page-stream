@@ -7,13 +7,13 @@ Copy-paste recipes for **yt-dlp-page-stream**.
 ## Single download from a page URL
 
 ```bash
-yt-dlp -o "%(title)s.%(ext)s" "https://yoursite.com/video/123/"
+yt-dlp-page-stream -o "%(title)s.%(ext)s" "https://yoursite.com/video/123/"
 ```
 
 Pick a format:
 
 ```bash
-yt-dlp -f best "https://yoursite.com/video/123/"
+yt-dlp-page-stream -f best "https://yoursite.com/video/123/"
 ```
 
 ---
@@ -23,7 +23,7 @@ yt-dlp -f best "https://yoursite.com/video/123/"
 When you only have the direct link:
 
 ```bash
-yt-dlp --extractor-args "tokenized_cdn:referer=https://yoursite.com/video/123/" \
+yt-dlp-page-stream --extractor-args "tokenized_cdn:referer=https://yoursite.com/video/123/" \
   -o "video.%(ext)s" \
   "https://cdn.example.com/file.mp4?token=TOKEN&expires=EXPIRES"
 ```
@@ -55,13 +55,13 @@ Extract URLs, then download each (generic yt-dlp; headers may be missing for som
 
 ```bash
 page-stream-extract -i urls.txt -o streams.txt
-yt-dlp -a streams.txt
+yt-dlp-page-stream -a streams.txt
 ```
 
 **Recommended:** download from page URLs so `page_stream` sets headers:
 
 ```bash
-yt-dlp -a urls.txt
+yt-dlp-page-stream -a urls.txt
 ```
 
 (Requires `urls.txt` to contain page URLs, not CDN URLs.)
@@ -134,11 +134,11 @@ Useful when appending to an output file across multiple runs.
 ## Force the page_stream extractor
 
 ```bash
-yt-dlp --ies page_stream "https://yoursite.com/video/123/"
+yt-dlp-page-stream --ies page_stream "https://yoursite.com/video/123/"
 ```
 
 Exclude generic if another extractor conflicts:
 
 ```bash
-yt-dlp --ies "page_stream,-generic" "https://yoursite.com/video/123/"
+yt-dlp-page-stream --ies "page_stream,-generic" "https://yoursite.com/video/123/"
 ```

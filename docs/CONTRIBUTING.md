@@ -13,7 +13,6 @@ This project is not on PyPI or Homebrew—use an editable install from a clone:
 ```bash
 git clone https://github.com/hamza-siddiq/yt-dlp-page-stream.git
 cd yt-dlp-page-stream
-pip install yt-dlp
 pip install -e .
 ```
 
@@ -35,7 +34,7 @@ python3 -m yt_dlp -v --simulate "https://example.com/" 2>&1 | grep -F "Extractor
 Test extraction (no download):
 
 ```bash
-page-stream-yt-dlp --simulate "https://yoursite.com/video/123/"
+yt-dlp-page-stream --simulate "https://yoursite.com/video/123/"
 ```
 
 Test CLI:

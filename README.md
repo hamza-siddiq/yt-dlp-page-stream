@@ -3,7 +3,7 @@
 **yt-dlp plugin** — extract and download **HLS (`.m3u8`)** and **MP4** streams from **video page URLs**, with `Referer` / `Origin` headers so tokenized CDNs do not return HTTP 428.
 
 - Repository: [github.com/hamza-siddiq/yt-dlp-page-stream](https://github.com/hamza-siddiq/yt-dlp-page-stream)
-- Requires: [yt-dlp](https://github.com/yt-dlp/yt-dlp) (install separately), Python 3.8+
+- Requires: Python 3.8+ ([yt-dlp](https://github.com/yt-dlp/yt-dlp) installed automatically with `pip install -e .`)
 - Changelog: [CHANGELOG.md](CHANGELOG.md) (formerly **m3u8-link-extractor**)
 
 **Suggested GitHub topics:** `yt-dlp`, `yt-dlp-plugin`, `m3u8`, `hls`, `page-stream`
@@ -15,12 +15,11 @@
 ```bash
 git clone https://github.com/hamza-siddiq/yt-dlp-page-stream.git
 cd yt-dlp-page-stream
-pip install yt-dlp
 pip install -e .
-page-stream-yt-dlp "https://yoursite.com/video/123/"
+yt-dlp-page-stream "https://yoursite.com/video/123/"
 ```
 
-Use **`page-stream-yt-dlp`** (or `python3 -m yt_dlp`) for downloads—not bare **`yt-dlp`** on your PATH unless it shares the same Python as `pip install -e .`. Homebrew-only setups are described under [Installation](#installation).
+**Package name:** `yt-dlp-page-stream` · **Download command:** `yt-dlp-page-stream` (same name). Use that command (or `python3 -m yt_dlp` in the same env) for downloads—not bare **`yt-dlp`** on your PATH unless it shares the same Python as `pip install -e .`. Homebrew-only setups are described under [Installation](#installation).
 
 Use the **page URL** you open in a browser—not the raw CDN link.
 
@@ -50,23 +49,24 @@ flowchart LR
 
 | Install method | This plugin | yt-dlp |
 |----------------|-------------|--------|
-| `pip install -e .` from a **git clone** | Yes | No — install yt-dlp yourself |
+| `pip install -e .` from a **git clone** | Yes | Yes (declared dependency) |
 | `pip install yt-dlp-page-stream` on PyPI | **Not available** (not published) | — |
 | `brew install yt-dlp-page-stream` | **No formula** | — |
 | `brew install yt-dlp` | No | Yes — yt-dlp only |
 
-You always install **two pieces**: yt-dlp, then this plugin (clone + editable pip, `PYTHONPATH`, or manual plugin directory).
+From a git clone, **`pip install -e .` installs both** this plugin and yt-dlp. Homebrew-only or manual plugin paths are alternatives when Python stacks differ.
 
 ### pip from a clone (recommended)
 
 ```bash
 git clone https://github.com/hamza-siddiq/yt-dlp-page-stream.git
 cd yt-dlp-page-stream
-pip install yt-dlp
 pip install -e .
 ```
 
-`pip install -e .` registers the plugin, **`page-stream-yt-dlp`** (yt-dlp with this plugin), and **`page-stream-extract`**. Downloads must use `page-stream-yt-dlp` or `python3 -m yt_dlp`—not bare `yt-dlp` when Homebrew uses a different Python.
+`pip install -e .` registers the plugin, **`yt-dlp-page-stream`** (yt-dlp with this plugin), and **`page-stream-extract`**. Downloads must use `yt-dlp-page-stream` or `python3 -m yt_dlp`—not bare `yt-dlp` when Homebrew uses a different Python.
+
+The deprecated alias **`page-stream-yt-dlp`** still works for this release.
 
 ### Verify the plugin loaded
 
@@ -82,7 +82,7 @@ The script **fails** if `Plugin directories: none` (bare `yt-dlp` without the pl
 **Downloads after `pip install -e .`:**
 
 ```bash
-page-stream-yt-dlp -a urls.txt
+yt-dlp-page-stream -a urls.txt
 # same Python as pip:
 python3 -m yt_dlp -a urls.txt
 ```
@@ -139,15 +139,24 @@ Expected layout:
 
 See also: [yt-dlp plugin documentation](https://github.com/yt-dlp/yt-dlp#plugins).
 
+### Update notifications
+
+When you run **`yt-dlp-page-stream`** in an interactive terminal, it may check once per 24 hours whether **yt-dlp** (PyPI) or this package (GitHub releases) has a newer version and print upgrade hints. Checks are skipped in CI, pipes, and non-TTY sessions.
+
+| Environment variable | Effect |
+|---------------------|--------|
+| `YT_DLP_PAGE_STREAM_SKIP_UPDATE_CHECK=1` | Never check |
+| `YT_DLP_PAGE_STREAM_UPDATE_PROMPT=1` | If updates are found, ask whether to run suggested `pip` commands |
+
 ---
 
 ## Workflows
 
 | You have | What to run |
 |----------|-------------|
-| A **video page URL** | `page-stream-yt-dlp "https://yoursite.com/video/123/"` |
-| **Batch page URLs** | `page-stream-yt-dlp -a urls.txt` |
-| A **CDN URL only** (e.g. from an old export) | `page-stream-yt-dlp --extractor-args "tokenized_cdn:referer=..." "https://cdn.example.com/file.mp4?token=TOKEN"` |
+| A **video page URL** | `yt-dlp-page-stream "https://yoursite.com/video/123/"` |
+| **Batch page URLs** | `yt-dlp-page-stream -a urls.txt` |
+| A **CDN URL only** (e.g. from an old export) | `yt-dlp-page-stream --extractor-args "tokenized_cdn:referer=..." "https://cdn.example.com/file.mp4?token=TOKEN"` |
 | A **list of page URLs** (extract streams only) | `page-stream-extract -i urls.txt -o streams.txt` |
 | **JSONL** with url + referer + origin | `./scripts/download-jsonl.sh streams.jsonl` |
 | **Homebrew yt-dlp** + plugin | `./scripts/yt-dlp-with-plugin.sh -a urls.txt` |
@@ -157,7 +166,7 @@ More recipes: [docs/EXAMPLES.md](docs/EXAMPLES.md).
 ### Download from a page URL
 
 ```bash
-page-stream-yt-dlp "https://yoursite.com/video/123/"
+yt-dlp-page-stream "https://yoursite.com/video/123/"
 ```
 
 The `page_stream` extractor resolves the stream and attaches headers automatically.
@@ -165,7 +174,7 @@ The `page_stream` extractor resolves the stream and attaches headers automatical
 ### Download from a CDN URL only
 
 ```bash
-page-stream-yt-dlp --extractor-args "tokenized_cdn:referer=https://yoursite.com/video/123/" \
+yt-dlp-page-stream --extractor-args "tokenized_cdn:referer=https://yoursite.com/video/123/" \
   "https://cdn.example.com/file.mp4?token=TOKEN&expires=EXPIRES"
 ```
 
@@ -183,7 +192,7 @@ The referer must be the **original video page** where you found the embed.
 Force a specific extractor if needed:
 
 ```bash
-page-stream-yt-dlp --ies page_stream "https://yoursite.com/video/123/"
+yt-dlp-page-stream --ies page_stream "https://yoursite.com/video/123/"
 ```
 
 ---
@@ -255,8 +264,8 @@ These are **third-party PHP script names on the remote site**, not a product thi
 | Symptom | Quick fix |
 |---------|-------------|
 | HTTP **428** on download | Use a **page URL**, or pass `tokenized_cdn:referer=<page>` for CDN URLs |
-| `[generic]` in verbose log | Use **`page-stream-yt-dlp`**, not bare **`yt-dlp`**; run `./scripts/verify-plugin.sh` |
-| Verify passed but downloads use `[generic]` | Same issue — verify script sets `PYTHONPATH`; downloads need `page-stream-yt-dlp` or `scripts/yt-dlp-with-plugin.sh` |
+| `[generic]` in verbose log | Use **`yt-dlp-page-stream`**, not bare **`yt-dlp`**; run `./scripts/verify-plugin.sh` |
+| Verify passed but downloads use `[generic]` | Same issue — verify script sets `PYTHONPATH`; downloads need `yt-dlp-page-stream` or `scripts/yt-dlp-with-plugin.sh` |
 | No formats / extraction failed | Page may not use a supported iframe — see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) |
 | Token expired | Re-run extraction from the page URL |
 

@@ -2,6 +2,24 @@
 
 All notable changes to **yt-dlp-page-stream** are documented here.
 
+## [2.1.0] - 2026-05-31
+
+### Added
+
+- `yt-dlp` as a required pip dependency — `pip install -e .` installs plugin and yt-dlp together
+- **`yt-dlp-page-stream`** console script (download command matches package / plugin name)
+- Pre-run update notifications (interactive TTY, 24h cache): outdated **yt-dlp** on PyPI and plugin on GitHub
+
+### Changed
+
+- **`page-stream-yt-dlp`** is a deprecated alias for `yt-dlp-page-stream` (removed in a future release)
+- README / docs: one-step install; use `yt-dlp-page-stream` instead of bare `yt-dlp` in examples
+
+### Environment
+
+- `YT_DLP_PAGE_STREAM_SKIP_UPDATE_CHECK=1` — disable update checks
+- `YT_DLP_PAGE_STREAM_UPDATE_PROMPT=1` — optional `pip` upgrade prompt when updates are found
+
 ## [2.0.3] - 2026-05-31
 
 ### Fixed

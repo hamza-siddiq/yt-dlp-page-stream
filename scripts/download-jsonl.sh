@@ -13,8 +13,18 @@
 #   ./scripts/download-jsonl.sh streams.jsonl
 #   ./scripts/download-jsonl.sh streams.jsonl -o "%(id)s.%(ext)s" -f best
 #
-# Extra arguments are passed through to yt-dlp after the built-in referer headers.
+# Extra arguments are passed through to yt-dlp-page-stream after the built-in referer headers.
 set -euo pipefail
+
+YTDLP_CMD="yt-dlp-page-stream"
+if ! command -v "$YTDLP_CMD" >/dev/null 2>&1; then
+  if command -v page-stream-yt-dlp >/dev/null 2>&1; then
+    YTDLP_CMD="page-stream-yt-dlp"
+  else
+    echo "Install the plugin first: pip install -e .  (provides yt-dlp-page-stream)" >&2
+    exit 1
+  fi
+fi
 
 if [[ $# -lt 1 ]]; then
   echo "Usage: $0 streams.jsonl [extra yt-dlp args...]" >&2
@@ -35,7 +45,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   referer=$(printf '%s' "$line" | python3 -c 'import json,sys; print(json.load(sys.stdin)["referer"])')
   origin=$(printf '%s' "$line" | python3 -c 'import json,sys; print(json.load(sys.stdin)["origin"])')
   echo "Downloading: $url"
-  yt-dlp \
+  "$YTDLP_CMD" \
     --referer "$referer" \
     --add-header "Origin:${origin}" \
     "$@" \
