@@ -8,9 +8,12 @@ This project is a **standalone yt-dlp plugin** plus a small stdlib CLI. It is in
 
 ## Development setup
 
+This project is not on PyPI or Homebrew—use an editable install from a clone:
+
 ```bash
 git clone https://github.com/hamza-siddiq/yt-dlp-page-stream.git
 cd yt-dlp-page-stream
+pip install yt-dlp
 pip install -e .
 ```
 

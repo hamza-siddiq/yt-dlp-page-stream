@@ -3,8 +3,8 @@
 **yt-dlp plugin** — extract and download **HLS (`.m3u8`)** and **MP4** streams from **video page URLs**, with `Referer` / `Origin` headers so tokenized CDNs do not return HTTP 428.
 
 - Repository: [github.com/hamza-siddiq/yt-dlp-page-stream](https://github.com/hamza-siddiq/yt-dlp-page-stream)
-- Requires: [yt-dlp](https://github.com/yt-dlp/yt-dlp), Python 3.8+
-- Changelog: [CHANGELOG.md](CHANGELOG.md)
+- Requires: [yt-dlp](https://github.com/yt-dlp/yt-dlp) (install separately), Python 3.8+
+- Changelog: [CHANGELOG.md](CHANGELOG.md) (formerly **m3u8-link-extractor**)
 
 **Suggested GitHub topics:** `yt-dlp`, `yt-dlp-plugin`, `m3u8`, `hls`, `page-stream`
 
@@ -43,14 +43,27 @@ flowchart LR
 
 ## Installation
 
-Use the **same Python environment** as your `yt-dlp` binary when using `pip install`.
+### What is and is not packaged
 
-### pip (recommended)
+| Install method | This plugin | yt-dlp |
+|----------------|-------------|--------|
+| `pip install -e .` from a **git clone** | Yes | No — install yt-dlp yourself |
+| `pip install yt-dlp-page-stream` on PyPI | **Not available** (not published) | — |
+| `brew install yt-dlp-page-stream` | **No formula** | — |
+| `brew install yt-dlp` | No | Yes — yt-dlp only |
+
+You always install **two pieces**: yt-dlp, then this plugin (clone + editable pip, `PYTHONPATH`, or manual plugin directory).
+
+### pip from a clone (recommended)
 
 ```bash
+git clone https://github.com/hamza-siddiq/yt-dlp-page-stream.git
 cd yt-dlp-page-stream
+pip install yt-dlp
 pip install -e .
 ```
+
+`pip install -e .` registers the plugin and CLI (`page-stream-extract`). It must run in the **same Python environment** as the `yt-dlp` you invoke—check with `which yt-dlp` and `which python3`.
 
 ### Verify the plugin loaded
 
@@ -64,13 +77,26 @@ Plugin extractors may not appear in `yt-dlp --list-extractors`; use the command 
 
 ### Homebrew yt-dlp (macOS)
 
-Homebrew’s `yt-dlp` often uses a Python without pip. Either install yt-dlp via [pipx](https://github.com/pypa/pipx), or point `PYTHONPATH` at this repo:
+`brew install yt-dlp` does **not** install this plugin. Homebrew’s yt-dlp also uses a bundled Python that usually has **no pip**, so `pip install -e .` on system Python will not affect `brew`-installed `yt-dlp`.
+
+Pick one approach:
+
+**A — pipx (yt-dlp + plugin in one Python stack)**
 
 ```bash
+brew install pipx
+pipx install "yt-dlp[default]"
+pipx inject yt-dlp /path/to/yt-dlp-page-stream
+```
+
+**B — Keep Homebrew yt-dlp, add plugin via PYTHONPATH**
+
+```bash
+brew install yt-dlp
 export PYTHONPATH="/path/to/yt-dlp-page-stream:${PYTHONPATH}"
 ```
 
-Run the verify command after setting `PYTHONPATH`.
+Run the verify command after either setup.
 
 ### Manual plugin directory
 
@@ -214,17 +240,6 @@ These are **third-party PHP script names on the remote site**, not a product thi
 | Token expired | Re-run extraction from the page URL |
 
 Full guide: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
-
----
-
-## Migration from v1.x
-
-| v1 (`m3u8-link-extractor`) | v2 (`yt-dlp-page-stream`) |
-|----------------------------|---------------------------|
-| Repo name | `yt-dlp-page-stream` |
-| Extractor `snstr` | `page_stream` |
-| Extractor `protectedcdn` | `tokenized_cdn` |
-| `--extractor-args protectedcdn:referer=...` | `--extractor-args tokenized_cdn:referer=...` |
 
 ---
 

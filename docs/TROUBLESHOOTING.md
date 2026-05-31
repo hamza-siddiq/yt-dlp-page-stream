@@ -99,7 +99,7 @@ yt-dlp is using a different Python than the one where you ran `pip install -e .`
 
 **Cause**
 
-Homebrew’s `yt-dlp` bundles its own Python without pip.
+There is no Homebrew formula for **yt-dlp-page-stream**—only for yt-dlp. Homebrew’s `yt-dlp` bundles its own Python without pip, so a separate `pip install -e .` does not wire the plugin into that binary.
 
 **Fix (pick one)**
 

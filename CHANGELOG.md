@@ -15,9 +15,10 @@ All notable changes to **yt-dlp-page-stream** are documented here.
 ### Changed
 
 - Repository renamed from `m3u8-link-extractor` to **yt-dlp-page-stream**
-- Package name `yt-dlp-page-stream` in `pyproject.toml`
-- Extractor `snstr` renamed to `page_stream`
+- Package name `yt-dlp-page-stream` in `pyproject.toml` (install via `pip install -e .` from git; not published to PyPI)
+- Extractor `snstr` renamed to `page_stream` (only relevant if you used a pre-release checkout)
 - Extractor `protectedcdn` renamed to `tokenized_cdn`
+- `--extractor-args protectedcdn:referer=...` → `tokenized_cdn:referer=...`
 - `--base-url` is optional (derived from each page URL)
 
 ### Removed
