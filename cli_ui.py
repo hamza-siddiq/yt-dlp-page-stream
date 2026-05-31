@@ -23,6 +23,17 @@ def print_msg(text: str, *, stderr: bool = False, style: Optional[str] = None) -
         print(text, file=sys.stderr if stderr else sys.stdout)
 
 
+def run_with_status(message: str, func) -> None:
+    """Run func() inside a Rich spinner when stderr is a TTY."""
+    console = get_console(stderr=True)
+    if console:
+        with console.status(message, spinner="dots"):
+            func()
+    else:
+        print(message, file=sys.stderr)
+        func()
+
+
 def confirm(prompt: str, default: bool = False) -> bool:
     console = get_console(stderr=True)
     if console:

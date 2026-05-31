@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 
 _PKG_ROOT = Path(__file__).resolve().parent
-_OUR_UPDATE_FLAG = "--update"
 
 
 def _ensure_package_on_syspath() -> None:
@@ -21,16 +20,19 @@ def _ensure_package_on_syspath() -> None:
         sys.path.insert(0, root)
 
 
-def _consume_update_flag(argv: list[str]) -> bool:
-    found = False
+def _consume_our_flags(argv: list[str]) -> tuple[bool, bool]:
+    do_update = False
+    show_version = False
     stripped: list[str] = []
     for arg in argv:
-        if arg == _OUR_UPDATE_FLAG:
-            found = True
+        if arg == "--update":
+            do_update = True
+        elif arg in ("--version", "-V"):
+            show_version = True
         else:
             stripped.append(arg)
     argv[:] = stripped
-    return found
+    return do_update, show_version
 
 
 def _argv_is_standalone(argv: list[str]) -> bool:
@@ -42,8 +44,14 @@ def main() -> None:
     _ensure_package_on_syspath()
 
     argv = sys.argv[:]
-    do_update = _consume_update_flag(argv)
+    do_update, show_version = _consume_our_flags(argv)
     sys.argv = argv
+
+    if show_version:
+        from update_check import print_version_info
+
+        print_version_info()
+        sys.exit(0)
 
     from update_check import maybe_notify_updates, run_update_flow
 

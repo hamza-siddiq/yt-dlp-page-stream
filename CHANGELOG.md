@@ -2,6 +2,17 @@
 
 All notable changes to **yt-dlp-page-stream** are documented here.
 
+## [2.2.1] - 2026-05-31
+
+### Added
+
+- **`yt-dlp-ps --version`** / **`-V`** — print installed `yt-dlp-page-stream` and `yt-dlp` versions
+
+### Changed
+
+- **`--update`** shows a spinner while checking remotes; pip upgrades run under a status spinner with **Upgrade finished.** when done
+- **All up to date.** also lists installed versions
+
 ## [2.2.0] - 2026-05-31
 
 ### Added

@@ -116,12 +116,41 @@ def _is_git_clone() -> bool:
     return (_pkg_root() / ".git").is_dir()
 
 
-def _run_pip_commands(commands: List[str]) -> None:
+def get_version_lines() -> List[str]:
+    lines: List[str] = []
+    installed_pkg = _installed_version(_PKG_NAME)
+    lines.append(
+        f"yt-dlp-page-stream {installed_pkg or 'unknown'}"
+    )
+    installed_ytdlp = _installed_version("yt-dlp")
+    lines.append(f"yt-dlp {installed_ytdlp or 'not installed'}")
+    return lines
+
+
+def print_version_info() -> None:
     from cli_ui import print_msg
 
+    for line in get_version_lines():
+        print_msg(line)
+
+
+def _run_pip_commands(commands: List[str]) -> None:
+    from cli_ui import get_console, print_msg, run_with_status
+
+    console = get_console(stderr=True)
+
     for cmd in commands:
-        print_msg(f"Running: {cmd}", stderr=True, style="dim")
-        subprocess.run(cmd, shell=True, check=False)
+        if console:
+            def run_cmd(command: str = cmd) -> None:
+                subprocess.run(command, shell=True, check=False)
+
+            run_with_status(f"[bold cyan]Running:[/] {cmd}", run_cmd)
+        else:
+            print_msg(f"Running: {cmd}", stderr=True, style="dim")
+            subprocess.run(cmd, shell=True, check=False)
+
+    if commands:
+        print_msg("Upgrade finished.", stderr=True, style="green")
 
 
 def _gather_updates() -> Tuple[List[str], List[str], bool]:
@@ -182,14 +211,34 @@ def run_update_flow(*, force: bool, prompt: bool) -> int:
         if _cache_fresh():
             return 0
 
-    messages, pip_commands, needs_git_pull = _gather_updates()
-    _write_cache()
+    from cli_ui import confirm, get_console, print_msg, run_with_status
 
-    from cli_ui import confirm, get_console, print_msg
+    gathered: List = []
+
+    def check() -> None:
+        gathered[:] = list(_gather_updates())
+
+    show_check_spinner = force or prompt
+    if show_check_spinner:
+        run_with_status(
+            "[bold]Checking PyPI and GitHub for updates...[/]",
+            check,
+        )
+    else:
+        check()
+
+    messages, pip_commands, needs_git_pull = (
+        gathered[0],
+        gathered[1],
+        gathered[2],
+    )
+    _write_cache()
 
     if not messages:
         if force or prompt:
             print_msg("All up to date.", stderr=True, style="green")
+            for line in get_version_lines():
+                print_msg(f"  {line}", stderr=True, style="dim")
         return 0
 
     body = "\n\n".join(messages)

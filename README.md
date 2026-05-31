@@ -149,10 +149,11 @@ When you run **`yt-dlp-ps`** in an interactive terminal, it may check once per 2
 **Force check and upgrade (interactive):**
 
 ```bash
-yt-dlp-ps --update
+yt-dlp-ps --version    # yt-dlp-page-stream and yt-dlp versions
+yt-dlp-ps --update     # spinner while checking; spinner per pip step when upgrading
 ```
 
-Shows what is outdated and asks **`Upgrade now? [y/N]`**. On **yes**, runs `pip install -U yt-dlp` and/or `pip install -e .` (for git clones, run **`git pull`** in the repo first). Use with downloads to check before a batch:
+Shows what is outdated and asks **`Upgrade now? [y/N]`**. On **yes**, runs `pip install -U yt-dlp` and/or `pip install -e .` (for git clones, run **`git pull`** in the repo first). **`All up to date.`** means nothing newer was found on PyPI/GitHub (installed versions are printed). Use with downloads to check before a batch:
 
 ```bash
 yt-dlp-ps --update --ignore-errors -a urls.txt
