@@ -117,8 +117,10 @@ def _is_git_clone() -> bool:
 
 
 def _run_pip_commands(commands: List[str]) -> None:
+    from cli_ui import print_msg
+
     for cmd in commands:
-        print(f"Running: {cmd}", file=sys.stderr)
+        print_msg(f"Running: {cmd}", stderr=True, style="dim")
         subprocess.run(cmd, shell=True, check=False)
 
 
@@ -183,28 +185,35 @@ def run_update_flow(*, force: bool, prompt: bool) -> int:
     messages, pip_commands, needs_git_pull = _gather_updates()
     _write_cache()
 
+    from cli_ui import confirm, get_console, print_msg
+
     if not messages:
         if force or prompt:
-            print("All up to date.", file=sys.stderr)
+            print_msg("All up to date.", stderr=True, style="green")
         return 0
 
-    print("\nUpdates available:", file=sys.stderr)
-    for msg in messages:
-        print(msg, file=sys.stderr)
-        print(file=sys.stderr)
+    body = "\n\n".join(messages)
+    console = get_console(stderr=True)
+    if console:
+        from rich.panel import Panel
+
+        console.print(
+            Panel.fit(body, title="Updates available", border_style="yellow")
+        )
+    else:
+        print("\nUpdates available:", file=sys.stderr)
+        for msg in messages:
+            print(msg, file=sys.stderr)
+            print(file=sys.stderr)
 
     should_prompt = prompt or _env_truthy("YT_DLP_PAGE_STREAM_UPDATE_PROMPT")
     if should_prompt and pip_commands:
-        try:
-            answer = input("Upgrade now? [y/N] ").strip().lower()
-        except (EOFError, KeyboardInterrupt):
-            print(file=sys.stderr)
-            return 0
-        if answer in ("y", "yes"):
+        if confirm("Upgrade now?", default=False):
             if needs_git_pull:
-                print(
+                print_msg(
                     "Run git pull in your clone first, then re-run --update if needed.",
-                    file=sys.stderr,
+                    stderr=True,
+                    style="yellow",
                 )
             _run_pip_commands(pip_commands)
         return 0
