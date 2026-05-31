@@ -18,14 +18,14 @@ Repository = "https://github.com/hamza-siddiq/yt-dlp-page-stream"
 Issues = "https://github.com/hamza-siddiq/yt-dlp-page-stream/issues"
 
 [project.scripts]
-yt-dlp-ps = "page_stream_yt_dlp:main"
-yt-dlp-page-stream = "page_stream_yt_dlp:main"
-page-stream-yt-dlp = "page_stream_yt_dlp:main"
+yt-dlp-ps = "yt_dlp_page_stream:main"
+yt-dlp-page-stream = "yt_dlp_page_stream:main"
+page-stream-yt-dlp = "yt_dlp_page_stream:main"
 page-stream-extract = "convert_links:main"
 convert-links = "convert_links:main"
 
 [tool.setuptools]
-py-modules = ["convert_links", "page_stream_yt_dlp", "update_check"]
+py-modules = ["convert_links", "yt_dlp_page_stream", "update_check"]
 
 [tool.setuptools.packages.find]
 where = ["."]
