@@ -4,6 +4,10 @@ All notable changes to **yt-dlp-page-stream** are documented here.
 
 ## [Unreleased]
 
+### Documentation
+
+- `yt-dlp-ps` is the primary download command; `yt-dlp-page-stream` is a supported alias (same entry point). Only `page-stream-yt-dlp` is deprecated.
+
 ## [2.2.5] - 2026-05-31
 
 ### Documentation

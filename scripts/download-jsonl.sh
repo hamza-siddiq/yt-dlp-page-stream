@@ -13,7 +13,7 @@
 #   ./scripts/download-jsonl.sh streams.jsonl
 #   ./scripts/download-jsonl.sh streams.jsonl -o "%(id)s.%(ext)s" -f best
 #
-# Extra arguments are passed through to yt-dlp-ps after the built-in referer headers.
+# Extra arguments are passed through to yt-dlp-ps (or yt-dlp-page-stream) after referer headers.
 set -euo pipefail
 
 YTDLP_CMD="yt-dlp-ps"

@@ -31,7 +31,7 @@ Or, after `pip install -e .` in the same Python as yt-dlp:
 python3 -m yt_dlp -v --simulate "https://example.com/" 2>&1 | grep -F "Extractor Plugins"
 ```
 
-Test extraction (no download):
+Test extraction (no download). Use **`yt-dlp-ps`** (primary) or **`yt-dlp-page-stream`** (same entry point):
 
 ```bash
 yt-dlp-ps --simulate "https://yoursite.com/video/123/"

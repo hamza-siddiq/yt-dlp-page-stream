@@ -1,6 +1,6 @@
 # Examples
 
-Recipes use **`yt-dlp-ps`** (yt-dlp with this plugin). Copy-paste examples for **yt-dlp-page-stream** below.
+Recipes use **`yt-dlp-ps`** (primary; same as **`yt-dlp-page-stream`**). Both run yt-dlp with this plugin loaded.
 
 ---
 

@@ -23,7 +23,7 @@ yt-dlp-ps "https://yoursite.com/video/123/"
 
 All `yt-dlp` flags work (`-f`, `-o`, `-a`, `--simulate`, …).
 
-**Package name:** `yt-dlp-page-stream` · **Download command:** `yt-dlp-ps` (short for page stream). Aliases: `yt-dlp-page-stream`, `page-stream-yt-dlp`. Use `yt-dlp-ps` or `python3 -m yt_dlp` in the same env—not bare **`yt-dlp`** on your PATH unless it shares the same Python as `pip install -e .`. Homebrew-only setups are described under [Installation](#installation).
+**Package name:** `yt-dlp-page-stream` · **Primary command:** `yt-dlp-ps` (short for page stream). **Also works:** `yt-dlp-page-stream` (same binary, matches the package name). **Deprecated:** `page-stream-yt-dlp`. Use `yt-dlp-ps`, `yt-dlp-page-stream`, or `python3 -m yt_dlp` in the same env—not bare **`yt-dlp`** on your PATH unless it shares the same Python as `pip install -e .`. Homebrew-only setups are described under [Installation](#installation).
 
 Use the **page URL** you open in a browser—not the raw CDN link.
 
@@ -69,9 +69,9 @@ cd yt-dlp-page-stream
 pip install -e .
 ```
 
-`pip install -e .` registers the plugin, **`yt-dlp-ps`** (yt-dlp with this plugin), and **`page-stream-extract`**. Downloads must use `yt-dlp-ps` or `python3 -m yt_dlp`—not bare `yt-dlp` when Homebrew uses a different Python.
+`pip install -e .` registers the plugin, **`yt-dlp-ps`** and **`yt-dlp-page-stream`** (same yt-dlp + plugin; prefer `yt-dlp-ps`), and **`page-stream-extract`**. Downloads must use one of those commands or `python3 -m yt_dlp`—not bare `yt-dlp` when Homebrew uses a different Python.
 
-Deprecated aliases **`yt-dlp-page-stream`** and **`page-stream-yt-dlp`** still work.
+The legacy command **`page-stream-yt-dlp`** still works but is deprecated.
 
 ### Verify the plugin loaded
 
@@ -148,7 +148,7 @@ See also: [yt-dlp plugin documentation](https://github.com/yt-dlp/yt-dlp#plugins
 
 There is no custom uninstall command—use the steps that match how you installed.
 
-**pip / editable clone** (removes `yt-dlp-ps`, `page-stream-extract`, and this package):
+**pip / editable clone** (removes `yt-dlp-ps`, `yt-dlp-page-stream`, `page-stream-extract`, and this package):
 
 ```bash
 pip uninstall yt-dlp-page-stream
@@ -321,7 +321,7 @@ These are **third-party PHP script names on the remote site**, not a product thi
 |---------|-------------|
 | HTTP **428** on download | Use a **page URL**, or pass `tokenized_cdn:referer=<page>` for CDN URLs |
 | `[generic]` in verbose log | Use **`yt-dlp-ps`**, not bare **`yt-dlp`**; run `./scripts/verify-plugin.sh` |
-| Verify passed but downloads use `[generic]` | Same issue — verify script sets `PYTHONPATH`; downloads need `yt-dlp-ps` or `scripts/yt-dlp-with-plugin.sh` |
+| Verify passed but downloads use `[generic]` | Same issue — verify script sets `PYTHONPATH`; downloads need `yt-dlp-ps` / `yt-dlp-page-stream` or `scripts/yt-dlp-with-plugin.sh` |
 | No formats / extraction failed | Page may not use a supported iframe — see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) |
 | Token expired | Re-run extraction from the page URL |
 
