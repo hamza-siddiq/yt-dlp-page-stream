@@ -20,10 +20,17 @@ pip install -e .
 Verify plugins load:
 
 ```bash
-PYTHONPATH=. yt-dlp -v --simulate "https://cdn.example.com/example.mp4" 2>&1 | grep "Extractor Plugins"
+chmod +x scripts/verify-plugin.sh
+./scripts/verify-plugin.sh
 ```
 
 Expected: `PageStreamIE`, `TokenizedCdnIE`.
+
+Or, after `pip install -e .` in the same Python as yt-dlp:
+
+```bash
+python3 -m yt_dlp -v --simulate "https://example.com/" 2>&1 | grep -F "Extractor Plugins"
+```
 
 Test extraction (no download):
 

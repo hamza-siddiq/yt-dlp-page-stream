@@ -80,11 +80,10 @@ yt-dlp is using a different Python than the one where you ran `pip install -e .`
    pip install -e /path/to/yt-dlp-page-stream
    ```
 
-2. Or set `PYTHONPATH`:
+2. Or run the verify script (sets `PYTHONPATH` for you):
 
    ```bash
-   export PYTHONPATH="/path/to/yt-dlp-page-stream:${PYTHONPATH}"
-   yt-dlp -v --simulate "https://cdn.example.com/example.mp4" 2>&1 | grep "Extractor Plugins"
+   /path/to/yt-dlp-page-stream/scripts/verify-plugin.sh
    ```
 
 3. Or use the manual plugin tree under `~/.config/yt-dlp/plugins/yt-dlp-page-stream/` (see [README](../README.md#manual-plugin-directory)).

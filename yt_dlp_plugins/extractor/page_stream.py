@@ -1,5 +1,5 @@
 import hashlib
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from yt_dlp.extractor.common import InfoExtractor
 
@@ -61,11 +61,22 @@ class PageStreamIE(InfoExtractor):
 
 class TokenizedCdnIE(InfoExtractor):
     IE_NAME = "tokenized_cdn"
-    IE_DESC = "Tokenized CDN streams (e.g. cdn.example.com) requiring Referer"
+    IE_DESC = (
+        "Direct MP4/M3U8 CDN URLs with signed query parameters requiring Referer"
+    )
     _VALID_URL = (
         r"https?://[^/]+/"
-        r"(?P<id>[^/?#]+)\.(?P<ext>mp4|m3u8)(?:\?[^#]*)?"
+        r"(?P<id>[^/?#]+)\.(?P<ext>mp4|m3u8)\?[^#]*"
     )
+
+    @classmethod
+    def suitable(cls, url):
+        if not super().suitable(url):
+            return False
+        parsed = urlparse(url)
+        query = parse_qs(parsed.query, keep_blank_values=True)
+        keys = {k.lower() for k in query}
+        return "token" in keys or "expires" in keys
 
     def _real_extract(self, url):
         referer_list = self._configuration_arg("referer")

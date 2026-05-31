@@ -71,12 +71,21 @@ pip install -e .
 ### Verify the plugin loaded
 
 ```bash
-yt-dlp -v --simulate "https://cdn.example.com/example.mp4" 2>&1 | grep "Extractor Plugins"
+chmod +x scripts/verify-plugin.sh
+./scripts/verify-plugin.sh
 ```
 
 Expected output includes: `PageStreamIE`, `TokenizedCdnIE`.
 
-Plugin extractors may not appear in `yt-dlp --list-extractors`; use the command above.
+Plugin extractors may not appear in `yt-dlp --list-extractors`; use the script above.
+
+If you used `pip install -e .`, the `yt-dlp` on your `PATH` may use a **different Python** than pip (common with Homebrew). Either run the verify script (sets `PYTHONPATH`), or use the same interpreter:
+
+```bash
+python3 -m yt_dlp -v --simulate "https://example.com/" 2>&1 | grep -F "Extractor Plugins"
+```
+
+Check alignment with `which yt-dlp` and `python3 -m yt_dlp --version`.
 
 ### Homebrew yt-dlp (macOS)
 
@@ -99,7 +108,7 @@ brew install yt-dlp
 export PYTHONPATH="/path/to/yt-dlp-page-stream:${PYTHONPATH}"
 ```
 
-Run the verify command after either setup.
+Run `./scripts/verify-plugin.sh` after either setup.
 
 ### Manual plugin directory
 
@@ -161,7 +170,7 @@ The referer must be the **original video page** where you found the embed.
 | Extractor | When it runs | Required `--extractor-args` |
 |-----------|----------------|-----------------------------|
 | `page_stream` | URL is a video page with a supported player iframe | none |
-| `tokenized_cdn` | URL matches `https://cdn.example.com/….mp4` or `.m3u8` | `referer=https://yoursite.com/video/123/` |
+| `tokenized_cdn` | Direct `.mp4` / `.m3u8` URL with `token=` or `expires=` query params | `referer=https://yoursite.com/video/123/` |
 
 Force a specific extractor if needed:
 
@@ -229,7 +238,7 @@ Works on video pages whose player iframe loads embed scripts such as:
 - `snstr.php?fileid=...`
 - `snstrhls.php?fileid=...`
 
-These are **third-party PHP script names on the remote site**, not a product this project is named after. Tokenized hosts like `cdn.example.com` work via `tokenized_cdn` when you supply the page referer.
+These are **third-party PHP script names on the remote site**, not a product this project is named after. Signed CDN URLs work via `tokenized_cdn` when you supply the page referer.
 
 ---
 

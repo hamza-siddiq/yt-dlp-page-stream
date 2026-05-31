@@ -2,6 +2,19 @@
 
 All notable changes to **yt-dlp-page-stream** are documented here.
 
+## [2.0.1] - 2026-05-31
+
+### Added
+
+- `scripts/verify-plugin.sh` — reliable plugin check via `PYTHONPATH` (works with Homebrew `yt-dlp`)
+
+### Changed
+
+- `tokenized_cdn` matches any host with signed query params (`token` / `expires`), not a single CDN domain
+- Plugin verification docs use `./scripts/verify-plugin.sh` or `python3 -m yt_dlp` when `yt-dlp` uses a different Python
+- setuptools namespace packaging for `yt_dlp_plugins` (yt-dlp sample-plugins pattern)
+- Documentation and examples use placeholder hosts (`cdn.example.com`, `yoursite.com`)
+
 ## [2.0.0] - 2026-05-31
 
 ### Added
