@@ -4,7 +4,7 @@ Thanks for helping improve **yt-dlp-page-stream**.
 
 ## Scope
 
-This project is a **standalone yt-dlp plugin** plus a small stdlib CLI. It is intentionally **not** merged into [yt-dlp](https://github.com/yt-dlp/yt-dlp) core: the extractor targets a cross-site embed pattern, uses broad URL matching, and is maintained here so changes do not depend on upstream release cycles.
+This project is a **separate yt-dlp plugin package** plus a small stdlib CLI. **Not a fork** — downloads still use yt-dlp’s engine and flags; this repo only ships extra extractors and helpers. It is intentionally **not** merged into [yt-dlp](https://github.com/yt-dlp/yt-dlp) core: the extractor targets a cross-site embed pattern, uses broad URL matching, and is maintained here so changes do not depend on upstream release cycles.
 
 ## Development setup
 
