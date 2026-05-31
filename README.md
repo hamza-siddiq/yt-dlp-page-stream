@@ -1,8 +1,8 @@
 # yt-dlp-page-stream
 
-**yt-dlp plugin** — extract and download **HLS (`.m3u8`)** and **MP4** streams from **video page URLs**, with `Referer` / `Origin` headers so tokenized CDNs do not return HTTP 428.
+> **Extends [yt-dlp](https://github.com/yt-dlp/yt-dlp)** — not a fork. Installs as a [plugin](https://github.com/yt-dlp/yt-dlp#plugins). **`yt-dlp-ps`** runs full yt-dlp with this plugin (same flags and built-in sites; adds `page_stream` / `tokenized_cdn` for video pages and signed CDN URLs).
 
-**`yt-dlp-ps` is full yt-dlp** (all built-in sites) plus this plugin. URLs without a supported page_stream embed fall through to normal yt-dlp extractors (YouTube, etc.).
+**Plugin for yt-dlp** — adds extractors for **HLS (`.m3u8`)** and **MP4** from **video page URLs**, with `Referer` / `Origin` so tokenized CDNs do not return HTTP 428. URLs without a supported embed use yt-dlp’s **built-in extractors** (YouTube, etc.) as usual.
 
 - Repository: [github.com/hamza-siddiq/yt-dlp-page-stream](https://github.com/hamza-siddiq/yt-dlp-page-stream)
 - Requires: Python 3.8+ ([yt-dlp](https://github.com/yt-dlp/yt-dlp) installed automatically with `pip install -e .`)
@@ -20,6 +20,8 @@ cd yt-dlp-page-stream
 pip install -e .
 yt-dlp-ps "https://yoursite.com/video/123/"
 ```
+
+All `yt-dlp` flags work (`-f`, `-o`, `-a`, `--simulate`, …).
 
 **Package name:** `yt-dlp-page-stream` · **Download command:** `yt-dlp-ps` (short for page stream). Aliases: `yt-dlp-page-stream`, `page-stream-yt-dlp`. Use `yt-dlp-ps` or `python3 -m yt_dlp` in the same env—not bare **`yt-dlp`** on your PATH unless it shares the same Python as `pip install -e .`. Homebrew-only setups are described under [Installation](#installation).
 
@@ -303,7 +305,7 @@ Full guide: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
 ## Contributing
 
-See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md). This project is maintained as a **yt-dlp plugin**, not as part of yt-dlp core.
+See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md). This project **extends** yt-dlp as a plugin (not part of yt-dlp core).
 
 ---
 
