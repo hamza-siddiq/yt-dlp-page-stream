@@ -27,7 +27,7 @@ def main() -> None:
     except ImportError:
         print(
             "yt-dlp is not installed in this Python environment.\n"
-            "Install it with: pip install yt-dlp",
+            "Install with: pip install -e .  (includes yt-dlp)",
             file=sys.stderr,
         )
         sys.exit(1)

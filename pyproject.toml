@@ -18,9 +18,10 @@ Repository = "https://github.com/hamza-siddiq/yt-dlp-page-stream"
 Issues = "https://github.com/hamza-siddiq/yt-dlp-page-stream/issues"
 
 [project.scripts]
+yt-dlp-page-stream = "page_stream_yt_dlp:main"
+page-stream-yt-dlp = "page_stream_yt_dlp:main"
 page-stream-extract = "convert_links:main"
 convert-links = "convert_links:main"
-page-stream-yt-dlp = "page_stream_yt_dlp:main"
 
 [tool.setuptools]
 py-modules = ["convert_links", "page_stream_yt_dlp"]
