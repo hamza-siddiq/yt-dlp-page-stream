@@ -58,13 +58,27 @@ def page_has_video_stream_embed(page_url: str) -> bool:
     return VIDEO_PAGE_IFRAME_PATTERN.search(html) is not None
 
 
+def no_embed_hint(page_url: str) -> str:
+    """Human-readable reason when extract_media_url returns None."""
+    path = urlparse(page_url).path or ""
+    if re.search(r"/page/\d+", path) or path.rstrip("/").endswith("/page"):
+        return (
+            "This URL looks like a listing or category page, not a single video. "
+            "Use direct video page URLs (e.g. https://yoursite.com/12345/)."
+        )
+    return (
+        "No supported video embed or stream URL found on this page "
+        "(expected snstr.php / snstrhls.php iframe)."
+    )
+
+
 def extract_media_url(
     page_url: str, base_url: Optional[str] = None
 ) -> Optional[dict]:
     """
     Extract direct media URL and headers needed for CDN download.
 
-    Returns dict with keys: url, referer, origin, user_agent, page
+    Returns dict with keys: url, referer, origin, user_agent, page, iframe_url
     """
     base = _resolve_base_url(page_url, base_url)
     origin = _origin_from_page(page_url)
@@ -101,4 +115,5 @@ def extract_media_url(
         "origin": origin,
         "user_agent": USER_AGENT,
         "page": page_url,
+        "iframe_url": iframe_url,
     }

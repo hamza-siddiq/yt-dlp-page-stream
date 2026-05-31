@@ -2,6 +2,13 @@
 
 All notable changes to **yt-dlp-page-stream** are documented here.
 
+## [2.1.1] - 2026-05-31
+
+### Fixed
+
+- Clearer error when a batch URL is a listing page (e.g. `/page/3/`) instead of a video page
+- Duplicate `http_headers` on info dict so yt-dlp always sends Referer/Origin on CDN downloads
+
 ## [2.1.0] - 2026-05-31
 
 ### Added

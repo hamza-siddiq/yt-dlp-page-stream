@@ -3,7 +3,7 @@ from urllib.parse import parse_qs, urlparse
 
 from yt_dlp.extractor.common import InfoExtractor
 
-from extractor.core import extract_media_url
+from extractor.core import extract_media_url, no_embed_hint
 
 
 def _media_headers(referer, origin, user_agent):
@@ -36,22 +36,22 @@ class PageStreamIE(InfoExtractor):
     def _real_extract(self, url):
         data = extract_media_url(url)
         if not data:
-            self.raise_no_formats(
-                "No supported video embed or stream URL found on this page"
-            )
+            self.raise_no_formats(no_embed_hint(url))
 
         media_url = data["url"]
         video_id = _stable_id(url)
+        headers = _media_headers(
+            data["referer"], data["origin"], data["user_agent"]
+        )
         return {
             "id": video_id,
             "title": video_id,
+            "http_headers": headers,
             "formats": [
                 {
                     "url": media_url,
                     "ext": _ext_from_url(media_url),
-                    "http_headers": _media_headers(
-                        data["referer"], data["origin"], data["user_agent"]
-                    ),
+                    "http_headers": headers,
                 }
             ],
         }
