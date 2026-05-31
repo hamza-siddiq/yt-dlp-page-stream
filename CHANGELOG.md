@@ -2,6 +2,15 @@
 
 All notable changes to **yt-dlp-page-stream** are documented here.
 
+## [2.2.3] - 2026-05-31
+
+### Fixed
+
+- **`--update`** no longer claims updates are available when PyPI/GitHub could not be reached (`latest: unknown`)
+- HTTPS checks use **certifi** CA bundle (common macOS Python SSL fix); longer timeout
+- Cached last-known remote versions shown when a check fails mid-flight
+- Plugin latest version read from **main** `pyproject.toml` when the repo has no GitHub releases/tags
+
 ## [2.2.2] - 2026-05-31
 
 ### Changed

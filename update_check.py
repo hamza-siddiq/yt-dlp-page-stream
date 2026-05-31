@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import ssl
 import subprocess
 import sys
 import time
@@ -15,7 +16,7 @@ from urllib.request import Request, urlopen
 _CACHE_DIR = Path.home() / ".cache" / "yt-dlp-page-stream"
 _CACHE_FILE = _CACHE_DIR / "last_check.json"
 _CACHE_TTL = 24 * 60 * 60
-_TIMEOUT = 3
+_TIMEOUT = 10
 _PKG_NAME = "yt-dlp-page-stream"
 _GITHUB_REPO = "hamza-siddiq/yt-dlp-page-stream"
 _GIT_INSTALL = (
@@ -39,9 +40,22 @@ def _version_lt(installed: str, latest: str) -> bool:
     return _parse_version_parts(installed) < _parse_version_parts(latest)
 
 
+def _ssl_context() -> ssl.SSLContext:
+    try:
+        import certifi
+
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        return ssl.create_default_context()
+
+
 def _fetch_json(url: str) -> dict:
-    req = Request(url, headers={"User-Agent": "yt-dlp-page-stream-update-check"})
-    with urlopen(req, timeout=_TIMEOUT) as resp:
+    headers = {
+        "User-Agent": "yt-dlp-page-stream-update-check",
+        "Accept": "application/json",
+    }
+    req = Request(url, headers=headers)
+    with urlopen(req, timeout=_TIMEOUT, context=_ssl_context()) as resp:
         return json.loads(resp.read().decode())
 
 
@@ -62,6 +76,30 @@ def _pypi_latest_ytdlp() -> Optional[str]:
         return None
 
 
+def _github_pyproject_version(branch: str = "main") -> Optional[str]:
+    url = f"https://raw.githubusercontent.com/{_GITHUB_REPO}/{branch}/pyproject.toml"
+    try:
+        req = Request(
+            url,
+            headers={
+                "User-Agent": "yt-dlp-page-stream-update-check",
+                "Accept": "text/plain",
+            },
+        )
+        with urlopen(req, timeout=_TIMEOUT, context=_ssl_context()) as resp:
+            text = resp.read().decode()
+        match = re.search(
+            r'^version\s*=\s*["\']([^"\']+)["\']',
+            text,
+            re.MULTILINE,
+        )
+        if match:
+            return match.group(1).strip()
+    except Exception:
+        pass
+    return None
+
+
 def _github_latest_pkg() -> Optional[str]:
     try:
         data = _fetch_json(
@@ -80,7 +118,7 @@ def _github_latest_pkg() -> Optional[str]:
                 return tag.lstrip("vV")
     except Exception:
         pass
-    return None
+    return _github_pyproject_version("main")
 
 
 def _read_cache() -> Optional[dict]:
@@ -92,16 +130,40 @@ def _read_cache() -> Optional[dict]:
     return None
 
 
-def _write_cache(installed: Optional[Dict[str, Optional[str]]] = None) -> None:
+def _cached_remote_latest() -> Dict[str, str]:
+    cache = _read_cache()
+    if not cache:
+        return {}
+    remote = cache.get("remote")
+    if isinstance(remote, dict):
+        out: Dict[str, str] = {}
+        for key in ("pkg", "ytdlp"):
+            val = remote.get(key)
+            if isinstance(val, str) and val:
+                out[key] = val
+        return out
+    return {}
+
+
+def _write_cache(
+    installed: Optional[Dict[str, Optional[str]]] = None,
+    *,
+    remote: Optional[Dict[str, str]] = None,
+) -> None:
     try:
         _CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        prev = _read_cache() or {}
         data: Dict[str, Any] = {"checked_at": time.time()}
         if installed is not None:
             data["installed"] = installed
-        else:
-            prev = _read_cache()
-            if prev and prev.get("installed"):
-                data["installed"] = prev["installed"]
+        elif prev.get("installed"):
+            data["installed"] = prev["installed"]
+        if remote:
+            merged = dict(prev.get("remote") or {})
+            merged.update({k: v for k, v in remote.items() if v})
+            data["remote"] = merged
+        elif prev.get("remote"):
+            data["remote"] = prev["remote"]
         _CACHE_FILE.write_text(json.dumps(data))
     except Exception:
         pass
@@ -202,6 +264,24 @@ def _print_version_changes(
             print_msg(f"{prefix}{label}: {a}", stderr=True, style="dim")
 
 
+def _version_line(
+    label: str,
+    installed: Optional[str],
+    latest: Optional[str],
+    *,
+    fresh: bool,
+    cached: bool,
+) -> str:
+    ver = installed or "?"
+    if fresh and latest:
+        return f"  {label} {ver}  (latest: {latest})"
+    if cached and latest:
+        return (
+            f"  {label} {ver}  (latest: {latest}, from last successful check)"
+        )
+    return f"  {label} {ver}"
+
+
 def _print_status_report(
     snapshot: Dict[str, Optional[str]],
     *,
@@ -214,33 +294,69 @@ def _print_status_report(
     ytdlp = snapshot.get("ytdlp")
     pkg_latest = snapshot.get("pkg_latest")
     ytdlp_latest = snapshot.get("ytdlp_latest")
+    pkg_fresh = bool(snapshot.get("pkg_latest_fresh"))
+    ytdlp_fresh = bool(snapshot.get("ytdlp_latest_fresh"))
+    pkg_cached = bool(snapshot.get("pkg_latest_cached"))
+    ytdlp_cached = bool(snapshot.get("ytdlp_latest_cached"))
 
-    pkg_ok = bool(pkg and pkg_latest and not _version_lt(pkg, pkg_latest))
-    ytdlp_ok = bool(ytdlp and ytdlp_latest and not _version_lt(ytdlp, ytdlp_latest))
-
-    if remote_checked and pkg_ok and ytdlp_ok:
-        print_msg("All up to date with PyPI / GitHub.", stderr=True, style="green")
-    elif remote_checked:
-        print_msg(
-            "Installed versions (updates still available on remotes):",
-            stderr=True,
-            style="yellow",
-        )
-    else:
-        print_msg("Installed versions:", stderr=True, style="bold")
+    outdated_pkg = bool(
+        pkg_fresh and pkg and pkg_latest and _version_lt(pkg, pkg_latest)
+    )
+    outdated_ytdlp = bool(
+        ytdlp_fresh and ytdlp and ytdlp_latest and _version_lt(ytdlp, ytdlp_latest)
+    )
+    remote_all_fresh = pkg_fresh and ytdlp_fresh
+    remote_none_fresh = not pkg_fresh and not ytdlp_fresh
 
     if remote_checked:
+        if remote_all_fresh and not outdated_pkg and not outdated_ytdlp:
+            print_msg("All up to date with PyPI / GitHub.", stderr=True, style="green")
+        elif outdated_pkg or outdated_ytdlp:
+            print_msg("Updates available on PyPI / GitHub.", stderr=True, style="yellow")
+        elif remote_none_fresh:
+            print_msg(
+                "Installed versions (could not reach PyPI / GitHub — "
+                "network, timeout, or SSL).",
+                stderr=True,
+                style="yellow",
+            )
+        else:
+            print_msg(
+                "Installed versions (remote check incomplete).",
+                stderr=True,
+                style="yellow",
+            )
+
         print_msg(
-            f"  yt-dlp-page-stream {pkg or '?'}  (latest: {pkg_latest or 'unknown'})",
+            _version_line(
+                "yt-dlp-page-stream",
+                pkg,
+                pkg_latest if isinstance(pkg_latest, str) else None,
+                fresh=pkg_fresh,
+                cached=pkg_cached,
+            ),
             stderr=True,
             style="dim",
         )
         print_msg(
-            f"  yt-dlp {ytdlp or '?'}  (latest: {ytdlp_latest or 'unknown'})",
+            _version_line(
+                "yt-dlp",
+                ytdlp,
+                ytdlp_latest if isinstance(ytdlp_latest, str) else None,
+                fresh=ytdlp_fresh,
+                cached=ytdlp_cached,
+            ),
             stderr=True,
             style="dim",
         )
+        if remote_none_fresh:
+            print_msg(
+                "  Tip: pip install -U certifi  (fixes SSL on some macOS Python installs)",
+                stderr=True,
+                style="dim",
+            )
     else:
+        print_msg("Installed versions:", stderr=True, style="bold")
         _print_version_changes(
             {"pkg": None, "ytdlp": None}, snapshot, prefix="  "
         )
@@ -262,7 +378,14 @@ def _print_status_report(
             style="cyan",
         )
         changed = True
-    if last_installed and not changed and remote_checked and pkg_ok and ytdlp_ok:
+    if (
+        last_installed
+        and not changed
+        and remote_checked
+        and remote_all_fresh
+        and not outdated_pkg
+        and not outdated_ytdlp
+    ):
         print_msg("  (no change since last check)", stderr=True, style="dim")
 
 
@@ -272,22 +395,30 @@ def _gather_updates() -> Tuple[List[str], List[str], bool, Dict[str, Optional[st
     pip_commands: List[str] = []
     needs_git_pull = False
 
+    cached_remote = _cached_remote_latest()
+
     installed_ytdlp = _installed_version("yt-dlp")
-    latest_ytdlp = _pypi_latest_ytdlp()
+    latest_ytdlp_fresh = _pypi_latest_ytdlp()
+    latest_ytdlp = latest_ytdlp_fresh or cached_remote.get("ytdlp")
     if (
         installed_ytdlp
-        and latest_ytdlp
-        and _version_lt(installed_ytdlp, latest_ytdlp)
+        and latest_ytdlp_fresh
+        and _version_lt(installed_ytdlp, latest_ytdlp_fresh)
     ):
         messages.append(
-            f"yt-dlp {installed_ytdlp} is outdated (latest on PyPI: {latest_ytdlp}).\n"
+            f"yt-dlp {installed_ytdlp} is outdated (latest on PyPI: {latest_ytdlp_fresh}).\n"
             "  pip install -U yt-dlp"
         )
         pip_commands.append("pip install -U yt-dlp")
 
     installed_pkg = _installed_version(_PKG_NAME)
-    latest_pkg = _github_latest_pkg()
-    if installed_pkg and latest_pkg and _version_lt(installed_pkg, latest_pkg):
+    latest_pkg_fresh = _github_latest_pkg()
+    latest_pkg = latest_pkg_fresh or cached_remote.get("pkg")
+    if (
+        installed_pkg
+        and latest_pkg_fresh
+        and _version_lt(installed_pkg, latest_pkg_fresh)
+    ):
         if _is_git_clone():
             needs_git_pull = True
             upgrade = "git pull && pip install -e ."
@@ -296,7 +427,7 @@ def _gather_updates() -> Tuple[List[str], List[str], bool, Dict[str, Optional[st
             upgrade = _GIT_INSTALL
             pip_commands.append(_GIT_INSTALL)
         messages.append(
-            f"{_PKG_NAME} {installed_pkg} is outdated (latest release: {latest_pkg}).\n"
+            f"{_PKG_NAME} {installed_pkg} is outdated (latest release: {latest_pkg_fresh}).\n"
             f"  {upgrade}"
         )
 
@@ -305,6 +436,11 @@ def _gather_updates() -> Tuple[List[str], List[str], bool, Dict[str, Optional[st
         "ytdlp": installed_ytdlp,
         "pkg_latest": latest_pkg,
         "ytdlp_latest": latest_ytdlp,
+        "pkg_latest_fresh": latest_pkg_fresh is not None,
+        "ytdlp_latest_fresh": latest_ytdlp_fresh is not None,
+        "pkg_latest_cached": latest_pkg_fresh is None and bool(cached_remote.get("pkg")),
+        "ytdlp_latest_cached": latest_ytdlp_fresh is None
+        and bool(cached_remote.get("ytdlp")),
     }
     return messages, pip_commands, needs_git_pull, snapshot
 
@@ -361,11 +497,13 @@ def run_update_flow(*, force: bool, prompt: bool) -> int:
                 last_installed=last_installed,
                 remote_checked=True,
             )
-        installed_record = {
-            "pkg": snapshot.get("pkg"),
-            "ytdlp": snapshot.get("ytdlp"),
-        }
-        _write_cache(installed_record)
+        _write_cache(
+            {
+                "pkg": snapshot.get("pkg"),
+                "ytdlp": snapshot.get("ytdlp"),
+            },
+            remote=_fresh_remote_for_cache(snapshot),
+        )
         return 0
 
     body = "\n\n".join(messages)
@@ -393,7 +531,10 @@ def run_update_flow(*, force: bool, prompt: bool) -> int:
                     style="yellow",
                 )
             after = _run_pip_commands(pip_commands, before)
-            _write_cache({"pkg": after.get("pkg"), "ytdlp": after.get("ytdlp")})
+            _write_cache(
+                {"pkg": after.get("pkg"), "ytdlp": after.get("ytdlp")},
+                remote=_fresh_remote_for_cache(snapshot),
+            )
             return 0
         print_msg("Upgrade skipped.", stderr=True, style="dim")
 
@@ -403,8 +544,20 @@ def run_update_flow(*, force: bool, prompt: bool) -> int:
             last_installed=last_installed,
             remote_checked=True,
         )
-    _write_cache({"pkg": snapshot.get("pkg"), "ytdlp": snapshot.get("ytdlp")})
+    _write_cache(
+        {"pkg": snapshot.get("pkg"), "ytdlp": snapshot.get("ytdlp")},
+        remote=_fresh_remote_for_cache(snapshot),
+    )
     return 0
+
+
+def _fresh_remote_for_cache(snapshot: Dict[str, Optional[str]]) -> Dict[str, str]:
+    remote: Dict[str, str] = {}
+    if snapshot.get("pkg_latest_fresh") and snapshot.get("pkg_latest"):
+        remote["pkg"] = str(snapshot["pkg_latest"])
+    if snapshot.get("ytdlp_latest_fresh") and snapshot.get("ytdlp_latest"):
+        remote["ytdlp"] = str(snapshot["ytdlp_latest"])
+    return remote
 
 
 def maybe_notify_updates() -> None:
