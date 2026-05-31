@@ -1,0 +1,186 @@
+"""Optional pre-run update notifications (interactive sessions only)."""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+from pathlib import Path
+from typing import List, Optional
+from urllib.request import Request, urlopen
+
+_CACHE_DIR = Path.home() / ".cache" / "yt-dlp-page-stream"
+_CACHE_FILE = _CACHE_DIR / "last_check.json"
+_CACHE_TTL = 24 * 60 * 60
+_TIMEOUT = 3
+_PKG_NAME = "yt-dlp-page-stream"
+_GITHUB_REPO = "hamza-siddiq/yt-dlp-page-stream"
+_GIT_INSTALL = (
+    'pip install -U "git+https://github.com/hamza-siddiq/yt-dlp-page-stream.git"'
+)
+
+
+def _env_truthy(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in ("1", "true", "yes")
+
+
+def _parse_version_parts(version: str) -> tuple:
+    parts: List[int] = []
+    for piece in re.split(r"[^0-9]+", version.lstrip("vV")):
+        if piece:
+            parts.append(int(piece))
+    return tuple(parts) if parts else (0,)
+
+
+def _version_lt(installed: str, latest: str) -> bool:
+    return _parse_version_parts(installed) < _parse_version_parts(latest)
+
+
+def _fetch_json(url: str) -> dict:
+    req = Request(url, headers={"User-Agent": "yt-dlp-page-stream-update-check"})
+    with urlopen(req, timeout=_TIMEOUT) as resp:
+        return json.loads(resp.read().decode())
+
+
+def _installed_version(dist_name: str) -> Optional[str]:
+    try:
+        from importlib.metadata import version
+
+        return version(dist_name)
+    except Exception:
+        return None
+
+
+def _pypi_latest_ytdlp() -> Optional[str]:
+    try:
+        data = _fetch_json("https://pypi.org/pypi/yt-dlp/json")
+        return data.get("info", {}).get("version")
+    except Exception:
+        return None
+
+
+def _github_latest_pkg() -> Optional[str]:
+    try:
+        data = _fetch_json(
+            f"https://api.github.com/repos/{_GITHUB_REPO}/releases/latest"
+        )
+        tag = data.get("tag_name", "")
+        if tag:
+            return tag.lstrip("vV")
+    except Exception:
+        pass
+    try:
+        data = _fetch_json(f"https://api.github.com/repos/{_GITHUB_REPO}/tags")
+        if isinstance(data, list) and data:
+            tag = data[0].get("name", "")
+            if tag:
+                return tag.lstrip("vV")
+    except Exception:
+        pass
+    return None
+
+
+def _read_cache() -> Optional[dict]:
+    try:
+        if _CACHE_FILE.is_file():
+            return json.loads(_CACHE_FILE.read_text())
+    except Exception:
+        pass
+    return None
+
+
+def _write_cache() -> None:
+    try:
+        _CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        _CACHE_FILE.write_text(json.dumps({"checked_at": time.time()}))
+    except Exception:
+        pass
+
+
+def _cache_fresh() -> bool:
+    cache = _read_cache()
+    if not cache:
+        return False
+    checked = cache.get("checked_at", 0)
+    return (time.time() - float(checked)) < _CACHE_TTL
+
+
+def _pkg_root() -> Path:
+    return Path(__file__).resolve().parent
+
+
+def _is_git_clone() -> bool:
+    return (_pkg_root() / ".git").is_dir()
+
+
+def _run_pip_commands(commands: List[str]) -> None:
+    for cmd in commands:
+        print(f"Running: {cmd}", file=sys.stderr)
+        subprocess.run(cmd, shell=True, check=False)
+
+
+def maybe_notify_updates() -> None:
+    try:
+        _maybe_notify_updates()
+    except Exception:
+        pass
+
+
+def _maybe_notify_updates() -> None:
+    if _env_truthy("YT_DLP_PAGE_STREAM_SKIP_UPDATE_CHECK"):
+        return
+    if not sys.stderr.isatty():
+        return
+    if _cache_fresh():
+        return
+
+    messages: List[str] = []
+    pip_commands: List[str] = []
+
+    installed_ytdlp = _installed_version("yt-dlp")
+    latest_ytdlp = _pypi_latest_ytdlp()
+    if (
+        installed_ytdlp
+        and latest_ytdlp
+        and _version_lt(installed_ytdlp, latest_ytdlp)
+    ):
+        messages.append(
+            f"yt-dlp {installed_ytdlp} is outdated (latest on PyPI: {latest_ytdlp}).\n"
+            "  pip install -U yt-dlp"
+        )
+        pip_commands.append("pip install -U yt-dlp")
+
+    installed_pkg = _installed_version(_PKG_NAME)
+    latest_pkg = _github_latest_pkg()
+    if installed_pkg and latest_pkg and _version_lt(installed_pkg, latest_pkg):
+        if _is_git_clone():
+            upgrade = "git pull && pip install -e ."
+            pip_commands.append("pip install -e .")
+        else:
+            upgrade = _GIT_INSTALL
+            pip_commands.append(_GIT_INSTALL)
+        messages.append(
+            f"{_PKG_NAME} {installed_pkg} is outdated (latest release: {latest_pkg}).\n"
+            f"  {upgrade}"
+        )
+
+    _write_cache()
+
+    if not messages:
+        return
+
+    print("\nUpdates available:", file=sys.stderr)
+    for msg in messages:
+        print(msg, file=sys.stderr)
+        print(file=sys.stderr)
+
+    if _env_truthy("YT_DLP_PAGE_STREAM_UPDATE_PROMPT") and pip_commands:
+        try:
+            answer = input("Upgrade now with pip? [y/N] ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            return
+        if answer in ("y", "yes"):
+            _run_pip_commands(pip_commands)

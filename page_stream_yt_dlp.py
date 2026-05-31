@@ -22,6 +22,9 @@ def _ensure_package_on_syspath() -> None:
 
 def main() -> None:
     _ensure_package_on_syspath()
+    from update_check import maybe_notify_updates
+
+    maybe_notify_updates()
     try:
         from yt_dlp import main as ytdlp_main
     except ImportError:

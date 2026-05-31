@@ -24,7 +24,7 @@ page-stream-extract = "convert_links:main"
 convert-links = "convert_links:main"
 
 [tool.setuptools]
-py-modules = ["convert_links", "page_stream_yt_dlp"]
+py-modules = ["convert_links", "page_stream_yt_dlp", "update_check"]
 
 [tool.setuptools.packages.find]
 where = ["."]
