@@ -1,2 +1,2 @@
-https://example.com/video/123/
-https://example.com/video/456/
+https://yoursite.com/video/123/
+https://yoursite.com/video/456/

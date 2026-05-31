@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Download every video page URL in a text file using the page_stream plugin.
+# Usage: ./urls-to-download.sh urls.txt
+set -euo pipefail
+
+if [[ $# -lt 1 ]]; then
+  echo "Usage: $0 urls.txt" >&2
+  exit 1
+fi
+
+url_file="$1"
+
+if [[ ! -f "$url_file" ]]; then
+  echo "File not found: $url_file" >&2
+  exit 1
+fi
+
+while IFS= read -r page_url || [[ -n "$page_url" ]]; do
+  [[ -z "$page_url" ]] && continue
+  [[ "$page_url" =~ ^# ]] && continue
+  echo "Downloading: $page_url"
+  yt-dlp -o "%(title)s.%(ext)s" "$page_url"
+done < "$url_file"
