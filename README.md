@@ -15,9 +15,12 @@
 ```bash
 git clone https://github.com/hamza-siddiq/yt-dlp-page-stream.git
 cd yt-dlp-page-stream
+pip install yt-dlp
 pip install -e .
 yt-dlp "https://yoursite.com/video/123/"
 ```
+
+If you already have `yt-dlp` in the same Python environment, skip `pip install yt-dlp`. Homebrew-only setups are described under [Installation](#installation).
 
 Use the **page URL** you open in a browser—not the raw CDN link.
 
