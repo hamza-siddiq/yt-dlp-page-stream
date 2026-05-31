@@ -8,7 +8,7 @@
 - Requires: Python 3.8+ ([yt-dlp](https://github.com/yt-dlp/yt-dlp) installed automatically with `pip install -e .`)
 - Changelog: [CHANGELOG.md](CHANGELOG.md) (formerly **m3u8-link-extractor**)
 
-**Suggested GitHub topics:** `yt-dlp`, `yt-dlp-plugin`, `m3u8`, `hls`, `page-stream`
+**Topics:** `yt-dlp`, `yt-dlp-plugin`, `m3u8`, `hls`, `page-stream`
 
 ---
 

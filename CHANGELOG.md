@@ -4,10 +4,13 @@ All notable changes to **yt-dlp-page-stream** are documented here.
 
 ## [Unreleased]
 
+## [2.2.5] - 2026-05-31
+
 ### Documentation
 
 - README and package description clarify that the project extends yt-dlp; `yt-dlp-ps` runs full yt-dlp with the plugin
 - README **Uninstall** section (pip, pipx, manual plugin path; no custom CLI command)
+- CONTRIBUTING / EXAMPLES wording; TROUBLESHOOTING links to uninstall
 
 ## [2.2.4] - 2026-05-31
 
