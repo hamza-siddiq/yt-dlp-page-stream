@@ -2,6 +2,14 @@
 
 All notable changes to **yt-dlp-page-stream** are documented here.
 
+## [2.2.2] - 2026-05-31
+
+### Changed
+
+- **`--update`** always shows installed vs latest remote versions
+- Detects upgrades done outside `--update` (e.g. `git pull`) via cached versions: **updated since last check**
+- After pip upgrades: **Upgrade complete.** with **before → after** version lines
+
 ## [2.2.1] - 2026-05-31
 
 ### Added

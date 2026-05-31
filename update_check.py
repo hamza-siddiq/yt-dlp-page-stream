@@ -9,7 +9,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.request import Request, urlopen
 
 _CACHE_DIR = Path.home() / ".cache" / "yt-dlp-page-stream"
@@ -92,12 +92,29 @@ def _read_cache() -> Optional[dict]:
     return None
 
 
-def _write_cache() -> None:
+def _write_cache(installed: Optional[Dict[str, Optional[str]]] = None) -> None:
     try:
         _CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        _CACHE_FILE.write_text(json.dumps({"checked_at": time.time()}))
+        data: Dict[str, Any] = {"checked_at": time.time()}
+        if installed is not None:
+            data["installed"] = installed
+        else:
+            prev = _read_cache()
+            if prev and prev.get("installed"):
+                data["installed"] = prev["installed"]
+        _CACHE_FILE.write_text(json.dumps(data))
     except Exception:
         pass
+
+
+def _last_installed_from_cache() -> Dict[str, Optional[str]]:
+    cache = _read_cache()
+    if not cache:
+        return {}
+    installed = cache.get("installed")
+    if isinstance(installed, dict):
+        return installed
+    return {}
 
 
 def _cache_fresh() -> bool:
@@ -134,7 +151,16 @@ def print_version_info() -> None:
         print_msg(line)
 
 
-def _run_pip_commands(commands: List[str]) -> None:
+def _version_snapshot() -> Dict[str, Optional[str]]:
+    return {
+        "pkg": _installed_version(_PKG_NAME),
+        "ytdlp": _installed_version("yt-dlp"),
+    }
+
+
+def _run_pip_commands(
+    commands: List[str], before: Dict[str, Optional[str]]
+) -> Dict[str, Optional[str]]:
     from cli_ui import get_console, print_msg, run_with_status
 
     console = get_console(stderr=True)
@@ -149,12 +175,99 @@ def _run_pip_commands(commands: List[str]) -> None:
             print_msg(f"Running: {cmd}", stderr=True, style="dim")
             subprocess.run(cmd, shell=True, check=False)
 
+    after = _version_snapshot()
     if commands:
-        print_msg("Upgrade finished.", stderr=True, style="green")
+        print_msg("Upgrade complete.", stderr=True, style="bold green")
+        _print_version_changes(before, after, prefix="  ")
+    return after
 
 
-def _gather_updates() -> Tuple[List[str], List[str], bool]:
-    """Return (messages, pip_commands, needs_git_pull)."""
+def _print_version_changes(
+    before: Dict[str, Optional[str]],
+    after: Dict[str, Optional[str]],
+    *,
+    prefix: str = "",
+) -> None:
+    from cli_ui import print_msg
+
+    labels = (
+        ("pkg", "yt-dlp-page-stream"),
+        ("ytdlp", "yt-dlp"),
+    )
+    for key, label in labels:
+        b, a = before.get(key), after.get(key)
+        if b and a and b != a:
+            print_msg(f"{prefix}{label}: {b} → {a}", stderr=True, style="cyan")
+        elif a:
+            print_msg(f"{prefix}{label}: {a}", stderr=True, style="dim")
+
+
+def _print_status_report(
+    snapshot: Dict[str, Optional[str]],
+    *,
+    last_installed: Dict[str, Optional[str]],
+    remote_checked: bool,
+) -> None:
+    from cli_ui import print_msg
+
+    pkg = snapshot.get("pkg")
+    ytdlp = snapshot.get("ytdlp")
+    pkg_latest = snapshot.get("pkg_latest")
+    ytdlp_latest = snapshot.get("ytdlp_latest")
+
+    pkg_ok = bool(pkg and pkg_latest and not _version_lt(pkg, pkg_latest))
+    ytdlp_ok = bool(ytdlp and ytdlp_latest and not _version_lt(ytdlp, ytdlp_latest))
+
+    if remote_checked and pkg_ok and ytdlp_ok:
+        print_msg("All up to date with PyPI / GitHub.", stderr=True, style="green")
+    elif remote_checked:
+        print_msg(
+            "Installed versions (updates still available on remotes):",
+            stderr=True,
+            style="yellow",
+        )
+    else:
+        print_msg("Installed versions:", stderr=True, style="bold")
+
+    if remote_checked:
+        print_msg(
+            f"  yt-dlp-page-stream {pkg or '?'}  (latest: {pkg_latest or 'unknown'})",
+            stderr=True,
+            style="dim",
+        )
+        print_msg(
+            f"  yt-dlp {ytdlp or '?'}  (latest: {ytdlp_latest or 'unknown'})",
+            stderr=True,
+            style="dim",
+        )
+    else:
+        _print_version_changes(
+            {"pkg": None, "ytdlp": None}, snapshot, prefix="  "
+        )
+
+    last_pkg = last_installed.get("pkg")
+    last_ytdlp = last_installed.get("ytdlp")
+    changed = False
+    if last_pkg and pkg and last_pkg != pkg:
+        print_msg(
+            f"  yt-dlp-page-stream updated since last check: {last_pkg} → {pkg}",
+            stderr=True,
+            style="cyan",
+        )
+        changed = True
+    if last_ytdlp and ytdlp and last_ytdlp != ytdlp:
+        print_msg(
+            f"  yt-dlp updated since last check: {last_ytdlp} → {ytdlp}",
+            stderr=True,
+            style="cyan",
+        )
+        changed = True
+    if last_installed and not changed and remote_checked and pkg_ok and ytdlp_ok:
+        print_msg("  (no change since last check)", stderr=True, style="dim")
+
+
+def _gather_updates() -> Tuple[List[str], List[str], bool, Dict[str, Optional[str]]]:
+    """Return (messages, pip_commands, needs_git_pull, snapshot with latest remotes)."""
     messages: List[str] = []
     pip_commands: List[str] = []
     needs_git_pull = False
@@ -187,7 +300,13 @@ def _gather_updates() -> Tuple[List[str], List[str], bool]:
             f"  {upgrade}"
         )
 
-    return messages, pip_commands, needs_git_pull
+    snapshot: Dict[str, Optional[str]] = {
+        "pkg": installed_pkg,
+        "ytdlp": installed_ytdlp,
+        "pkg_latest": latest_pkg,
+        "ytdlp_latest": latest_ytdlp,
+    }
+    return messages, pip_commands, needs_git_pull, snapshot
 
 
 def run_update_flow(*, force: bool, prompt: bool) -> int:
@@ -213,6 +332,7 @@ def run_update_flow(*, force: bool, prompt: bool) -> int:
 
     from cli_ui import confirm, get_console, print_msg, run_with_status
 
+    last_installed = _last_installed_from_cache()
     gathered: List = []
 
     def check() -> None:
@@ -227,18 +347,25 @@ def run_update_flow(*, force: bool, prompt: bool) -> int:
     else:
         check()
 
-    messages, pip_commands, needs_git_pull = (
+    messages, pip_commands, needs_git_pull, snapshot = (
         gathered[0],
         gathered[1],
         gathered[2],
+        gathered[3],
     )
-    _write_cache()
 
     if not messages:
         if force or prompt:
-            print_msg("All up to date.", stderr=True, style="green")
-            for line in get_version_lines():
-                print_msg(f"  {line}", stderr=True, style="dim")
+            _print_status_report(
+                snapshot,
+                last_installed=last_installed,
+                remote_checked=True,
+            )
+        installed_record = {
+            "pkg": snapshot.get("pkg"),
+            "ytdlp": snapshot.get("ytdlp"),
+        }
+        _write_cache(installed_record)
         return 0
 
     body = "\n\n".join(messages)
@@ -258,15 +385,25 @@ def run_update_flow(*, force: bool, prompt: bool) -> int:
     should_prompt = prompt or _env_truthy("YT_DLP_PAGE_STREAM_UPDATE_PROMPT")
     if should_prompt and pip_commands:
         if confirm("Upgrade now?", default=False):
+            before = _version_snapshot()
             if needs_git_pull:
                 print_msg(
                     "Run git pull in your clone first, then re-run --update if needed.",
                     stderr=True,
                     style="yellow",
                 )
-            _run_pip_commands(pip_commands)
-        return 0
+            after = _run_pip_commands(pip_commands, before)
+            _write_cache({"pkg": after.get("pkg"), "ytdlp": after.get("ytdlp")})
+            return 0
+        print_msg("Upgrade skipped.", stderr=True, style="dim")
 
+    if force or prompt:
+        _print_status_report(
+            snapshot,
+            last_installed=last_installed,
+            remote_checked=True,
+        )
+    _write_cache({"pkg": snapshot.get("pkg"), "ytdlp": snapshot.get("ytdlp")})
     return 0
 
 

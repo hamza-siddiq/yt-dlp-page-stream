@@ -153,7 +153,7 @@ yt-dlp-ps --version    # yt-dlp-page-stream and yt-dlp versions
 yt-dlp-ps --update     # spinner while checking; spinner per pip step when upgrading
 ```
 
-Shows what is outdated and asks **`Upgrade now? [y/N]`**. On **yes**, runs `pip install -U yt-dlp` and/or `pip install -e .` (for git clones, run **`git pull`** in the repo first). **`All up to date.`** means nothing newer was found on PyPI/GitHub (installed versions are printed). Use with downloads to check before a batch:
+Shows what is outdated and asks **`Upgrade now? [y/N]`**. On **yes**, runs `pip install -U yt-dlp` and/or `pip install -e .` (for git clones, run **`git pull`** in the repo first). **All up to date with PyPI / GitHub.** lists installed vs latest versions. If you upgraded manually (`git pull`, `pip install -e .`), the next run shows **updated since last check**. After confirming an upgrade, you get **Upgrade complete.** with version changes. Use with downloads to check before a batch:
 
 ```bash
 yt-dlp-ps --update --ignore-errors -a urls.txt

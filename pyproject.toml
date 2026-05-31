@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "yt-dlp-page-stream"
-version = "2.2.1"
+version = "2.2.2"
 description = "yt-dlp plugin and CLI: extract and download HLS/MP4 streams from video pages with correct Referer headers"
 readme = "README.md"
 requires-python = ">=3.8"
