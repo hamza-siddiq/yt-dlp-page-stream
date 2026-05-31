@@ -10,7 +10,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 from urllib.request import Request, urlopen
 
 _CACHE_DIR = Path.home() / ".cache" / "yt-dlp-page-stream"
@@ -19,9 +19,17 @@ _CACHE_TTL = 24 * 60 * 60
 _TIMEOUT = 10
 _PKG_NAME = "yt-dlp-page-stream"
 _GITHUB_REPO = "hamza-siddiq/yt-dlp-page-stream"
-_GIT_INSTALL = (
-    'pip install -U "git+https://github.com/hamza-siddiq/yt-dlp-page-stream.git"'
-)
+_GIT_URL = f"git+https://github.com/{_GITHUB_REPO}.git"
+
+
+class _UpgradeStep(NamedTuple):
+    display: str
+    argv: List[str]
+    cwd: Optional[Path] = None
+
+
+def _pip_argv(*args: str) -> List[str]:
+    return [sys.executable, "-m", "pip", *args]
 
 
 def _env_truthy(name: str) -> bool:
@@ -220,27 +228,60 @@ def _version_snapshot() -> Dict[str, Optional[str]]:
     }
 
 
-def _run_pip_commands(
-    commands: List[str], before: Dict[str, Optional[str]]
+def _run_upgrade_steps(
+    steps: List[_UpgradeStep], before: Dict[str, Optional[str]]
 ) -> Dict[str, Optional[str]]:
     from cli_ui import get_console, print_msg, run_with_status
 
     console = get_console(stderr=True)
+    failed: List[str] = []
 
-    for cmd in commands:
+    for step in steps:
+
+        def execute(s: _UpgradeStep = step) -> subprocess.CompletedProcess:
+            return subprocess.run(
+                s.argv,
+                cwd=str(s.cwd) if s.cwd else None,
+                check=False,
+            )
+
+        label = f"[bold cyan]Running:[/] {step.display}"
         if console:
-            def run_cmd(command: str = cmd) -> None:
-                subprocess.run(command, shell=True, check=False)
+            holder: List[subprocess.CompletedProcess] = []
 
-            run_with_status(f"[bold cyan]Running:[/] {cmd}", run_cmd)
+            def run_wrapped(s: _UpgradeStep = step) -> None:
+                holder.append(execute(s))
+
+            run_with_status(label, run_wrapped)
+            result = holder[0]
         else:
-            print_msg(f"Running: {cmd}", stderr=True, style="dim")
-            subprocess.run(cmd, shell=True, check=False)
+            print_msg(f"Running: {step.display}", stderr=True, style="dim")
+            result = execute()
+
+        if result.returncode != 0:
+            failed.append(step.display)
 
     after = _version_snapshot()
-    if commands:
+    if not steps:
+        return after
+
+    version_changed = before != after
+    if failed:
+        print_msg("Some upgrade steps failed.", stderr=True, style="bold red")
+        for name in failed:
+            print_msg(f"  {name}", stderr=True, style="dim")
+    if version_changed:
         print_msg("Upgrade complete.", stderr=True, style="bold green")
         _print_version_changes(before, after, prefix="  ")
+    elif not failed:
+        print_msg("Upgrade finished (versions unchanged).", stderr=True, style="dim")
+    else:
+        print_msg(
+            "Upgrade did not change installed versions. "
+            "Try manually: git pull && pip install -e . in your clone.",
+            stderr=True,
+            style="yellow",
+        )
     return after
 
 
@@ -389,11 +430,10 @@ def _print_status_report(
         print_msg("  (no change since last check)", stderr=True, style="dim")
 
 
-def _gather_updates() -> Tuple[List[str], List[str], bool, Dict[str, Optional[str]]]:
-    """Return (messages, pip_commands, needs_git_pull, snapshot with latest remotes)."""
+def _gather_updates() -> Tuple[List[str], List[_UpgradeStep], Dict[str, Optional[str]]]:
+    """Return (messages, upgrade_steps, snapshot with latest remotes)."""
     messages: List[str] = []
-    pip_commands: List[str] = []
-    needs_git_pull = False
+    upgrade_steps: List[_UpgradeStep] = []
 
     cached_remote = _cached_remote_latest()
 
@@ -409,7 +449,12 @@ def _gather_updates() -> Tuple[List[str], List[str], bool, Dict[str, Optional[st
             f"yt-dlp {installed_ytdlp} is outdated (latest on PyPI: {latest_ytdlp_fresh}).\n"
             "  pip install -U yt-dlp"
         )
-        pip_commands.append("pip install -U yt-dlp")
+        upgrade_steps.append(
+            _UpgradeStep(
+                "pip install -U yt-dlp",
+                _pip_argv("install", "-U", "yt-dlp"),
+            )
+        )
 
     installed_pkg = _installed_version(_PKG_NAME)
     latest_pkg_fresh = _github_latest_pkg()
@@ -420,12 +465,25 @@ def _gather_updates() -> Tuple[List[str], List[str], bool, Dict[str, Optional[st
         and _version_lt(installed_pkg, latest_pkg_fresh)
     ):
         if _is_git_clone():
-            needs_git_pull = True
-            upgrade = "git pull && pip install -e ."
-            pip_commands.append("pip install -e .")
+            root = _pkg_root()
+            upgrade = f"cd {root} && git pull && pip install -e ."
+            upgrade_steps.extend(
+                [
+                    _UpgradeStep(
+                        f"git pull ({root})",
+                        ["git", "-C", str(root), "pull"],
+                    ),
+                    _UpgradeStep(
+                        f"pip install -e {root}",
+                        _pip_argv("install", "-e", str(root)),
+                    ),
+                ]
+            )
         else:
-            upgrade = _GIT_INSTALL
-            pip_commands.append(_GIT_INSTALL)
+            upgrade = f"pip install -U {_GIT_URL}"
+            upgrade_steps.append(
+                _UpgradeStep(upgrade, _pip_argv("install", "-U", _GIT_URL))
+            )
         messages.append(
             f"{_PKG_NAME} {installed_pkg} is outdated (latest release: {latest_pkg_fresh}).\n"
             f"  {upgrade}"
@@ -442,7 +500,7 @@ def _gather_updates() -> Tuple[List[str], List[str], bool, Dict[str, Optional[st
         "ytdlp_latest_cached": latest_ytdlp_fresh is None
         and bool(cached_remote.get("ytdlp")),
     }
-    return messages, pip_commands, needs_git_pull, snapshot
+    return messages, upgrade_steps, snapshot
 
 
 def run_update_flow(*, force: bool, prompt: bool) -> int:
@@ -483,12 +541,7 @@ def run_update_flow(*, force: bool, prompt: bool) -> int:
     else:
         check()
 
-    messages, pip_commands, needs_git_pull, snapshot = (
-        gathered[0],
-        gathered[1],
-        gathered[2],
-        gathered[3],
-    )
+    messages, upgrade_steps, snapshot = gathered[0], gathered[1], gathered[2]
 
     if not messages:
         if force or prompt:
@@ -521,16 +574,10 @@ def run_update_flow(*, force: bool, prompt: bool) -> int:
             print(file=sys.stderr)
 
     should_prompt = prompt or _env_truthy("YT_DLP_PAGE_STREAM_UPDATE_PROMPT")
-    if should_prompt and pip_commands:
+    if should_prompt and upgrade_steps:
         if confirm("Upgrade now?", default=False):
             before = _version_snapshot()
-            if needs_git_pull:
-                print_msg(
-                    "Run git pull in your clone first, then re-run --update if needed.",
-                    stderr=True,
-                    style="yellow",
-                )
-            after = _run_pip_commands(pip_commands, before)
+            after = _run_upgrade_steps(upgrade_steps, before)
             _write_cache(
                 {"pkg": after.get("pkg"), "ytdlp": after.get("ytdlp")},
                 remote=_fresh_remote_for_cache(snapshot),

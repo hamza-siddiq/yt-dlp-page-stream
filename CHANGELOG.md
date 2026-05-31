@@ -2,6 +2,14 @@
 
 All notable changes to **yt-dlp-page-stream** are documented here.
 
+## [2.2.4] - 2026-05-31
+
+### Fixed
+
+- **`--update` upgrade** runs `git pull` and `pip install -e` in the **package clone** (absolute path), not your current shell directory
+- Auto-runs `git pull` before reinstall; no longer prints a misleading “run git pull first” then fails
+- Reports failed steps instead of **Upgrade complete.** when pip did not change versions
+
 ## [2.2.3] - 2026-05-31
 
 ### Fixed
