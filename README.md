@@ -144,6 +144,40 @@ Expected layout:
 
 See also: [yt-dlp plugin documentation](https://github.com/yt-dlp/yt-dlp#plugins).
 
+### Uninstall
+
+There is no custom uninstall command—use the steps that match how you installed.
+
+**pip / editable clone** (removes `yt-dlp-ps`, `page-stream-extract`, and this package):
+
+```bash
+pip uninstall yt-dlp-page-stream
+```
+
+`pip install -e .` also installs **yt-dlp** in that Python environment. If you still need yt-dlp after uninstalling this plugin:
+
+```bash
+pip install yt-dlp
+```
+
+**pipx** (plugin injected into yt-dlp):
+
+```bash
+pipx uninject yt-dlp /path/to/yt-dlp-page-stream
+```
+
+Use the same path you passed to `pipx inject`. To remove the whole pipx yt-dlp app: `pipx uninstall yt-dlp`.
+
+**Manual plugin directory:**
+
+```bash
+rm -rf "${HOME}/.config/yt-dlp/plugins/yt-dlp-page-stream"
+```
+
+Remove any `PYTHONPATH` entry that pointed at a clone. The git clone itself is not deleted by these steps.
+
+**Optional cleanup:** `rm -rf ~/.cache/yt-dlp-page-stream` (update-check cache).
+
 ### Update notifications
 
 When you run **`yt-dlp-ps`** in an interactive terminal, it may check once per 24 hours whether **yt-dlp** (PyPI) or this package (GitHub releases) has a newer version and print upgrade hints. Checks are skipped in CI, pipes, and non-TTY sessions.
