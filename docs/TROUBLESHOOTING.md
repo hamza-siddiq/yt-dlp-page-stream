@@ -221,6 +221,12 @@ The shared extractor in [`extractor/core.py`](../extractor/core.py) disables SSL
 
 ---
 
+## Removing the plugin
+
+To uninstall, use the steps for how you installed: `pip uninstall yt-dlp-page-stream`, `pipx uninject`, or remove `~/.config/yt-dlp/plugins/yt-dlp-page-stream`. Full instructions: [README — Uninstall](../README.md#uninstall).
+
+---
+
 ## Still stuck?
 
 1. Run with verbose logging and save the log:
