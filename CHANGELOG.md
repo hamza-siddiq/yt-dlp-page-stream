@@ -2,6 +2,25 @@
 
 All notable changes to **yt-dlp-page-stream** are documented here.
 
+## [2.0.3] - 2026-05-31
+
+### Fixed
+
+- `page-stream-yt-dlp` console script now loads plugins reliably (setuptools puts `bin/` on `sys.path`, which hid `yt_dlp_plugins/`)
+
+## [2.0.2] - 2026-05-31
+
+### Added
+
+- `page-stream-yt-dlp` console script — runs yt-dlp in the same Python as `pip install -e .` (plugin always loaded)
+- `scripts/yt-dlp-with-plugin.sh` — Homebrew `yt-dlp` wrapper with repo on `PYTHONPATH`
+
+### Changed
+
+- `page_stream` suitability is regex-only; embed detection runs in `_real_extract` (avoids silent fallback to generic)
+- `scripts/verify-plugin.sh` fails on `Plugin directories: none` and prints download command hints
+- README / troubleshooting: use `page-stream-yt-dlp` for downloads, not bare `yt-dlp` when Pythons differ
+
 ## [2.0.1] - 2026-05-31
 
 ### Added

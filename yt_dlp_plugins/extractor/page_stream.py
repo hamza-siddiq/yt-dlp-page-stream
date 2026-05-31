@@ -3,7 +3,7 @@ from urllib.parse import parse_qs, urlparse
 
 from yt_dlp.extractor.common import InfoExtractor
 
-from extractor.core import extract_media_url, page_has_video_stream_embed
+from extractor.core import extract_media_url
 
 
 def _media_headers(referer, origin, user_agent):
@@ -31,9 +31,7 @@ class PageStreamIE(InfoExtractor):
 
     @classmethod
     def suitable(cls, url):
-        if not super().suitable(url):
-            return False
-        return page_has_video_stream_embed(url)
+        return super().suitable(url)
 
     def _real_extract(self, url):
         data = extract_media_url(url)

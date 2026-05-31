@@ -27,7 +27,7 @@ The CDN expects a **Referer** (and often **Origin**) from the video page. yt-dlp
 Download from the **video page URL**:
 
 ```bash
-yt-dlp "https://yoursite.com/video/123/"
+page-stream-yt-dlp "https://yoursite.com/video/123/"
 ```
 
 **Fix — CDN URL only**
@@ -35,7 +35,7 @@ yt-dlp "https://yoursite.com/video/123/"
 Pass the page URL as referer:
 
 ```bash
-yt-dlp --extractor-args "tokenized_cdn:referer=https://yoursite.com/video/123/" \
+page-stream-yt-dlp --extractor-args "tokenized_cdn:referer=https://yoursite.com/video/123/" \
   "https://cdn.example.com/file.mp4?token=TOKEN&expires=EXPIRES"
 ```
 
@@ -66,27 +66,48 @@ No line like:
 [debug] Extractor Plugins: PageStreamIE, TokenizedCdnIE
 ```
 
+Or debug shows:
+
+```text
+[debug] Plugin directories: none
+```
+
+**Symptom — verify passed, downloads still use generic**
+
+`./scripts/verify-plugin.sh` prints `PageStreamIE`, but `yt-dlp -a urls.txt` from another folder still shows `[generic]`.
+
 **Cause**
 
-yt-dlp is using a different Python than the one where you ran `pip install -e .`, or the plugin directory is not on `PYTHONPATH`.
+`verify-plugin.sh` sets `PYTHONPATH` for that check only. Bare **`yt-dlp`** on your PATH (often Homebrew) uses a **different Python** than `pip install -e .`, so the plugin is not loaded during real downloads.
 
 **Fix**
 
-1. Reinstall in the same environment as yt-dlp:
+After `pip install -e .` and `pip install yt-dlp` in the same environment:
 
-   ```bash
-   which yt-dlp
-   which python3
-   pip install -e /path/to/yt-dlp-page-stream
-   ```
+```bash
+page-stream-yt-dlp -a urls.txt
+# or:
+python3 -m yt_dlp -a urls.txt
+```
 
-2. Or run the verify script (sets `PYTHONPATH` for you):
+If you keep Homebrew’s `yt-dlp`:
 
-   ```bash
-   /path/to/yt-dlp-page-stream/scripts/verify-plugin.sh
-   ```
+```bash
+/path/to/yt-dlp-page-stream/scripts/yt-dlp-with-plugin.sh -a urls.txt
+```
 
-3. Or use the manual plugin tree under `~/.config/yt-dlp/plugins/yt-dlp-page-stream/` (see [README](../README.md#manual-plugin-directory)).
+Confirm with:
+
+```bash
+page-stream-yt-dlp -v --simulate "https://yoursite.com/video/123/" 2>&1 | head -5
+```
+
+You should see `[page_stream]` (or a clear `page_stream` error), not `[generic]`.
+
+Other options:
+
+1. Reinstall in the same environment: `pip install -e /path/to/yt-dlp-page-stream`
+2. Manual plugin tree under `~/.config/yt-dlp/plugins/` (see [README](../README.md#manual-plugin-directory))
 
 ---
 
