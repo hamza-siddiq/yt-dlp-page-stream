@@ -4,9 +4,14 @@ All notable changes to **yt-dlp-page-stream** are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **`yt-dlp-ps --clipboard`** — batch-download page URLs copied to the system clipboard (one per line) instead of using `-a urls.txt`
+
 ### Documentation
 
 - `yt-dlp-ps` is the primary download command; `yt-dlp-page-stream` is a supported alias (same entry point). Only `page-stream-yt-dlp` is deprecated.
+- Discoverability: [docs/DISCOVERABILITY.md](docs/DISCOVERABILITY.md); upstream wiki listing requested in [yt-dlp#16846](https://github.com/yt-dlp/yt-dlp/issues/16846)
 
 ## [2.2.5] - 2026-05-31
 

@@ -7,6 +7,7 @@
 - Repository: [github.com/hamza-siddiq/yt-dlp-page-stream](https://github.com/hamza-siddiq/yt-dlp-page-stream)
 - Requires: Python 3.8+ ([yt-dlp](https://github.com/yt-dlp/yt-dlp) installed automatically with `pip install -e .`)
 - Changelog: [CHANGELOG.md](CHANGELOG.md) (formerly **m3u8-link-extractor**)
+- Find plugins: [yt-dlp-plugin topic](https://github.com/topics/yt-dlp-plugin) · Wiki listing requested: [yt-dlp#16846](https://github.com/yt-dlp/yt-dlp/issues/16846)
 
 **Topics:** `yt-dlp`, `yt-dlp-plugin`, `m3u8`, `hls`, `page-stream`
 
@@ -88,9 +89,13 @@ The script **fails** if `Plugin directories: none` (bare `yt-dlp` without the pl
 
 ```bash
 yt-dlp-ps -a urls.txt
+# or copy URLs to the clipboard (one per line), then:
+yt-dlp-ps --clipboard
 # same Python as pip:
 python3 -m yt_dlp -a urls.txt
 ```
+
+`--clipboard` reads page URLs from the system clipboard (macOS: `pbpaste`; Linux: `xclip` or `xsel`; Windows: PowerShell). It cannot be combined with `-a` or URL arguments on the command line.
 
 **Homebrew `yt-dlp` from any directory:**
 
@@ -212,6 +217,7 @@ In a terminal, `--update` uses **Rich** panels and a confirm prompt. Download jo
 |----------|-------------|
 | A **video page URL** | `yt-dlp-ps "https://yoursite.com/video/123/"` |
 | **Batch page URLs** | `yt-dlp-ps -a urls.txt` |
+| **URLs on the clipboard** (one per line) | `yt-dlp-ps --clipboard` |
 | A **CDN URL only** (e.g. from an old export) | `yt-dlp-ps --extractor-args "tokenized_cdn:referer=..." "https://cdn.example.com/file.mp4?token=TOKEN"` |
 | A **list of page URLs** (extract streams only) | `page-stream-extract -i urls.txt -o streams.txt` |
 | **JSONL** with url + referer + origin | `./scripts/download-jsonl.sh streams.jsonl` |

@@ -62,9 +62,11 @@ yt-dlp-ps -a streams.txt
 
 ```bash
 yt-dlp-ps -a urls.txt
+# or copy the same URLs to the clipboard, then:
+yt-dlp-ps --clipboard
 ```
 
-(Requires `urls.txt` to contain page URLs, not CDN URLs.)
+(Requires page URLs, not CDN URLs.)
 
 ---
 
