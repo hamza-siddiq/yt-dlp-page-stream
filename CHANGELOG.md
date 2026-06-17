@@ -8,6 +8,15 @@ All notable changes to **yt-dlp-page-stream** are documented here.
 
 - **`yt-dlp-ps --clipboard`** — batch-download page URLs copied to the system clipboard (one per line) instead of using `-a urls.txt`
 
+### Fixed
+
+- **Duplicate downloads** — pages that embed the same video more than once (e.g. a lightbox player plus an inline player) no longer download each file multiple times. `page_stream` now collects every direct `.mp4`/`.m3u8` source on a page and **de-duplicates by URL**, so a 13-video album that the generic extractor saw as 26 items downloads 13 files.
+
+### Changed
+
+- **`page_stream` is now generic across sites.** It extracts direct media (`<source>`, `<video src>`, `og:video`, JWPlayer `file:`, plus the existing `snstr.php` iframe) from any page that **no built-in yt-dlp extractor already handles**, returns a de-duplicated playlist, and attaches `Referer`/`Origin`. URLs recognized by a site-specific extractor (YouTube, Vimeo, …) are left untouched; only the generic fallback is replaced.
+- Page fetches now use a request timeout and retry transient connection resets, instead of potentially hanging.
+
 ### Documentation
 
 - `yt-dlp-ps` is the primary download command; `yt-dlp-page-stream` is a supported alias (same entry point). Only `page-stream-yt-dlp` is deprecated.

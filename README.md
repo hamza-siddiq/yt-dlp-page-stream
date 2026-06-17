@@ -248,7 +248,7 @@ The referer must be the **original video page** where you found the embed.
 
 | Extractor | When it runs | Required `--extractor-args` |
 |-----------|----------------|-----------------------------|
-| `page_stream` | URL is a video page with a supported player iframe | none |
+| `page_stream` | Video page with direct media (no dedicated extractor matches); de-duplicates repeated sources into a playlist | none |
 | `tokenized_cdn` | Direct `.mp4` / `.m3u8` URL with `token=` or `expires=` query params | `referer=https://yoursite.com/video/123/` |
 
 Force a specific extractor if needed:
@@ -312,12 +312,14 @@ One video page URL per line (not the raw CDN link). Blank lines are ignored. Lin
 
 ## Supported sites
 
-Works on video pages whose player iframe loads embed scripts such as:
+`page_stream` runs on any video page that **no built-in yt-dlp extractor already handles** and that exposes direct media URLs in its HTML or player iframe:
 
-- `snstr.php?fileid=...`
-- `snstrhls.php?fileid=...`
+- `<source src="….mp4">` / `<video src="….m3u8">` — including pages that embed the **same video twice** (e.g. a lightbox player and an inline player); these are **de-duplicated**, so each file downloads once
+- `og:video` / `og:video:url` meta tags pointing at `.mp4` / `.m3u8`
+- JWPlayer `file: "….mp4"` config
+- player iframes that load `snstr.php?fileid=...` / `snstrhls.php?fileid=...` embed scripts (third-party PHP script names on the remote site)
 
-These are **third-party PHP script names on the remote site**, not a product this project is named after. Signed CDN URLs work via `tokenized_cdn` when you supply the page referer.
+When a page has several unique sources, `page_stream` returns them as a **playlist** with the correct `Referer`/`Origin` headers. URLs that a dedicated extractor (YouTube, Vimeo, …) recognizes are left to that extractor — only the **generic** fallback is replaced. Signed CDN URLs work via `tokenized_cdn` when you supply the page referer.
 
 ---
 
@@ -325,6 +327,7 @@ These are **third-party PHP script names on the remote site**, not a product thi
 
 | Symptom | Quick fix |
 |---------|-------------|
+| Same file downloaded **multiple times** (similar names) | Update — `page_stream` now de-duplicates pages that embed a video more than once. Use **`yt-dlp-ps`**, not bare **`yt-dlp`** (which falls back to the duplicating generic extractor) |
 | HTTP **428** on download | Use a **page URL**, or pass `tokenized_cdn:referer=<page>` for CDN URLs |
 | `[generic]` in verbose log | Use **`yt-dlp-ps`**, not bare **`yt-dlp`**; run `./scripts/verify-plugin.sh` |
 | Verify passed but downloads use `[generic]` | Same issue — verify script sets `PYTHONPATH`; downloads need `yt-dlp-ps` / `yt-dlp-page-stream` or `scripts/yt-dlp-with-plugin.sh` |

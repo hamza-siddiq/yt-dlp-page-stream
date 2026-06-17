@@ -1,14 +1,20 @@
 import hashlib
+import re
 from urllib.parse import parse_qs, urlparse
 
 from yt_dlp.extractor.common import InfoExtractor
 from yt_dlp.utils import ExtractorError
 
 from extractor.core import (
-    extract_media_url,
+    USER_AGENT,
+    extract_all_media,
     no_embed_hint,
-    page_has_video_stream_embed,
+    page_has_extractable_media,
 )
+
+# Our own plugin extractors, skipped when checking for a dedicated handler.
+_OUR_IE_NAMES = {"page_stream", "tokenized_cdn"}
+_dedicated_classes = None
 
 
 def _media_headers(referer, origin, user_agent):
@@ -25,43 +31,100 @@ def _ext_from_url(url):
     return "mp4"
 
 
+_HEIGHT_RE = re.compile(r"[_-](\d{3,4})p\b", re.IGNORECASE)
+
+
+def _format_for(url, headers):
+    fmt = {
+        "url": url,
+        "ext": _ext_from_url(url),
+        "http_headers": headers,
+    }
+    match = _HEIGHT_RE.search(url)
+    if match:
+        fmt["height"] = int(match.group(1))
+        fmt["format_id"] = f"{match.group(1)}p"
+    return fmt
+
+
 def _stable_id(url):
     return hashlib.md5(url.encode()).hexdigest()[:12]
 
 
+def _has_dedicated_extractor(url):
+    """True when any built-in (non-generic) yt-dlp extractor matches this URL.
+
+    Lets page_stream sit between site-specific extractors and the generic
+    fallback: dedicated extractors (YouTube, Vimeo, ...) keep handling their
+    own URLs, and we only claim pages that would otherwise hit generic.
+    """
+    global _dedicated_classes
+    if _dedicated_classes is None:
+        from yt_dlp.extractor import gen_extractor_classes
+
+        classes = []
+        for ie in gen_extractor_classes():
+            name = (getattr(ie, "IE_NAME", "") or "")
+            if name.lower() == "generic" or name in _OUR_IE_NAMES:
+                continue
+            classes.append(ie)
+        _dedicated_classes = classes
+
+    for ie in _dedicated_classes:
+        try:
+            if ie.suitable(url):
+                return True
+        except Exception:
+            continue
+    return False
+
+
 class PageStreamIE(InfoExtractor):
     IE_NAME = "page_stream"
-    IE_DESC = "Video pages with iframe embeds that expose HLS or MP4 stream URLs"
+    IE_DESC = (
+        "Pages exposing direct HLS/MP4 media (incl. duplicated sources): "
+        "de-duplicates and attaches Referer/Origin headers"
+    )
     _VALID_URL = r"https?://[^/]+/.+"
 
     @classmethod
     def suitable(cls, url):
         if not super().suitable(url):
             return False
-        return page_has_video_stream_embed(url)
+        # Defer to any site-specific extractor before doing network I/O.
+        if _has_dedicated_extractor(url):
+            return False
+        return page_has_extractable_media(url)
+
+    def _media_info(self, sources, headers, title):
+        return {
+            "id": _stable_id(sources[0]),
+            "title": title,
+            "http_headers": headers,
+            "formats": [_format_for(url, headers) for url in sources],
+        }
 
     def _real_extract(self, url):
-        data = extract_media_url(url)
-        if not data:
+        data = extract_all_media(url)
+        if not data or not data.get("videos"):
             raise ExtractorError(no_embed_hint(url), expected=True)
 
-        media_url = data["url"]
-        video_id = _stable_id(url)
+        videos = data["videos"]
         headers = _media_headers(
             data["referer"], data["origin"], data["user_agent"]
         )
-        return {
-            "id": video_id,
-            "title": video_id,
-            "http_headers": headers,
-            "formats": [
-                {
-                    "url": media_url,
-                    "ext": _ext_from_url(media_url),
-                    "http_headers": headers,
-                }
-            ],
-        }
+        title = data.get("title") or _stable_id(url)
+
+        if len(videos) == 1:
+            return self._media_info(videos[0], headers, title)
+
+        entries = [
+            self._media_info(sources, headers, f"{title} ({n})")
+            for n, sources in enumerate(videos, 1)
+        ]
+        return self.playlist_result(
+            entries, playlist_id=_stable_id(url), playlist_title=title
+        )
 
 
 class TokenizedCdnIE(InfoExtractor):
@@ -98,7 +161,6 @@ class TokenizedCdnIE(InfoExtractor):
 
         parsed = urlparse(referer)
         origin = f"{parsed.scheme}://{parsed.netloc}"
-        from extractor.core import USER_AGENT
 
         return {
             "id": video_id,
