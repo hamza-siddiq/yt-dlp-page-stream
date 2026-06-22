@@ -10,10 +10,13 @@ All notable changes to **yt-dlp-page-stream** are documented here.
 
 ### Fixed
 
+- **HLS downloads saved as `.m3u8` files** — `page_stream` and `tokenized_cdn` now mark HLS streams with `protocol: m3u8_native` and output container `mp4`, so yt-dlp downloads segments and merges instead of saving the playlist manifest.
+- **Stale pip yt-dlp** — `yt-dlp-ps` now runs Homebrew (or `PATH`) yt-dlp with the plugin on `PYTHONPATH`, removes duplicate pip installs, and auto-upgrades via `brew upgrade yt-dlp`.
 - **Duplicate downloads** — pages that embed the same video more than once (e.g. a lightbox player plus an inline player) no longer download each file multiple times. `page_stream` now collects every direct `.mp4`/`.m3u8` source on a page and **de-duplicates by URL**, so a 13-video album that the generic extractor saw as 26 items downloads 13 files.
 
 ### Changed
 
+- **yt-dlp is no longer a pip dependency** — install with `brew install yt-dlp` (recommended). Set `YT_DLP_PAGE_STREAM_YTDLP` to override the binary path.
 - **`page_stream` is now generic across sites.** It extracts direct media (`<source>`, `<video src>`, `og:video`, JWPlayer `file:`, plus the existing `snstr.php` iframe) from any page that **no built-in yt-dlp extractor already handles**, returns a de-duplicated playlist, and attaches `Referer`/`Origin`. URLs recognized by a site-specific extractor (YouTube, Vimeo, …) are left untouched; only the generic fallback is replaced.
 - Page fetches now use a request timeout and retry transient connection resets, instead of potentially hanging.
 

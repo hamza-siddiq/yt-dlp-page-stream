@@ -5,7 +5,7 @@
 **Plugin for yt-dlp** — adds extractors for **HLS (`.m3u8`)** and **MP4** from **video page URLs**, with `Referer` / `Origin` so tokenized CDNs do not return HTTP 428. URLs without a supported embed use yt-dlp’s **built-in extractors** (YouTube, etc.) as usual.
 
 - Repository: [github.com/hamza-siddiq/yt-dlp-page-stream](https://github.com/hamza-siddiq/yt-dlp-page-stream)
-- Requires: Python 3.8+ ([yt-dlp](https://github.com/yt-dlp/yt-dlp) installed automatically with `pip install -e .`)
+- Requires: Python 3.8+, [yt-dlp](https://github.com/yt-dlp/yt-dlp) via **Homebrew** (`brew install yt-dlp`) or another binary on `PATH`
 - Changelog: [CHANGELOG.md](CHANGELOG.md) (formerly **m3u8-link-extractor**)
 - Find plugins: [yt-dlp-plugin topic](https://github.com/topics/yt-dlp-plugin) · Wiki listing requested: [yt-dlp#16846](https://github.com/yt-dlp/yt-dlp/issues/16846)
 
@@ -55,12 +55,12 @@ flowchart LR
 
 | Install method | This plugin | yt-dlp |
 |----------------|-------------|--------|
-| `pip install -e .` from a **git clone** | Yes | Yes (declared dependency) |
+| `pip install -e .` from a **git clone** | Yes | Uses Homebrew / `PATH` yt-dlp (not bundled via pip) |
 | `pip install yt-dlp-page-stream` on PyPI | **Not available** (not published) | — |
 | `brew install yt-dlp-page-stream` | **No formula** | — |
 | `brew install yt-dlp` | No | Yes — yt-dlp only |
 
-From a git clone, **`pip install -e .` installs both** this plugin and yt-dlp. Homebrew-only or manual plugin paths are alternatives when Python stacks differ.
+From a git clone, **`pip install -e .` installs this plugin** and the **`yt-dlp-ps`** command. Downloads use **Homebrew yt-dlp** when installed (`brew install yt-dlp`); a stale pip copy of yt-dlp is removed automatically. Override with `YT_DLP_PAGE_STREAM_YTDLP=/path/to/yt-dlp`.
 
 ### pip from a clone (recommended)
 
@@ -70,7 +70,7 @@ cd yt-dlp-page-stream
 pip install -e .
 ```
 
-`pip install -e .` registers the plugin, **`yt-dlp-ps`** and **`yt-dlp-page-stream`** (same yt-dlp + plugin; prefer `yt-dlp-ps`), and **`page-stream-extract`**. Downloads must use one of those commands or `python3 -m yt_dlp`—not bare `yt-dlp` when Homebrew uses a different Python.
+`pip install -e .` registers the plugin, **`yt-dlp-ps`** and **`yt-dlp-page-stream`** (same entry point; prefer `yt-dlp-ps`), and **`page-stream-extract`**. Install yt-dlp separately: **`brew install yt-dlp`** (recommended on macOS). Downloads must use **`yt-dlp-ps`** / **`yt-dlp-page-stream`** or `scripts/yt-dlp-with-plugin.sh`—not bare **`yt-dlp`** unless you set `PYTHONPATH` to this repo.
 
 The legacy command **`page-stream-yt-dlp`** still works but is deprecated.
 
@@ -185,7 +185,7 @@ Remove any `PYTHONPATH` entry that pointed at a clone. The git clone itself is n
 
 ### Update notifications
 
-When you run **`yt-dlp-ps`** in an interactive terminal, it may check once per 24 hours whether **yt-dlp** (PyPI) or this package (GitHub releases) has a newer version and print upgrade hints. Checks are skipped in CI, pipes, and non-TTY sessions.
+When you run **`yt-dlp-ps`** in an interactive terminal, it may check once per 24 hours whether **yt-dlp** or this package has a newer version. **yt-dlp** is upgraded automatically via **`brew upgrade yt-dlp`** when Homebrew is installed; otherwise pip is used. Plugin updates still require confirmation unless you pass **`--update`**.
 
 **Force check and upgrade (interactive):**
 
@@ -194,7 +194,7 @@ yt-dlp-ps --version    # yt-dlp-page-stream and yt-dlp versions
 yt-dlp-ps --update     # spinner while checking; spinner per pip step when upgrading
 ```
 
-Shows what is outdated and asks **`Upgrade now? [y/N]`**. On **yes**, runs `pip install -U yt-dlp` and/or `pip install -e .` (for git clones, run **`git pull`** in the repo first). **All up to date with PyPI / GitHub.** lists installed vs latest versions. If you upgraded manually (`git pull`, `pip install -e .`), the next run shows **updated since last check**. After confirming an upgrade, you get **Upgrade complete.** with version changes. Use with downloads to check before a batch:
+Shows what is outdated and asks **`Upgrade now? [y/N]`** for **this plugin** only. **yt-dlp** is upgraded automatically when outdated (Homebrew: `brew upgrade yt-dlp`). On **yes** for the plugin, runs `git pull && pip install -e .` (for git clones). Use with downloads to check before a batch:
 
 ```bash
 yt-dlp-ps --update --ignore-errors -a urls.txt

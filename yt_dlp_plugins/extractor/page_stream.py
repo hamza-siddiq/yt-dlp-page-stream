@@ -35,15 +35,30 @@ _HEIGHT_RE = re.compile(r"[_-](\d{3,4})p\b", re.IGNORECASE)
 
 
 def _format_for(url, headers):
+    stream_ext = _ext_from_url(url)
     fmt = {
         "url": url,
-        "ext": _ext_from_url(url),
         "http_headers": headers,
     }
+    if stream_ext == "m3u8":
+        # Without protocol, yt-dlp saves the playlist file as .m3u8 instead of
+        # downloading HLS segments and merging to a video container.
+        fmt.update(
+            {
+                "ext": "mp4",
+                "protocol": "m3u8_native",
+                "format_id": "hls",
+            }
+        )
+    else:
+        fmt["ext"] = stream_ext
     match = _HEIGHT_RE.search(url)
     if match:
         fmt["height"] = int(match.group(1))
-        fmt["format_id"] = f"{match.group(1)}p"
+        if stream_ext != "m3u8":
+            fmt["format_id"] = f"{match.group(1)}p"
+        else:
+            fmt["format_id"] = f"hls-{match.group(1)}p"
     return fmt
 
 
@@ -162,14 +177,23 @@ class TokenizedCdnIE(InfoExtractor):
         parsed = urlparse(referer)
         origin = f"{parsed.scheme}://{parsed.netloc}"
 
+        fmt = {
+            "url": url,
+            "http_headers": _media_headers(referer, origin, USER_AGENT),
+        }
+        if ext == "m3u8":
+            fmt.update(
+                {
+                    "ext": "mp4",
+                    "protocol": "m3u8_native",
+                    "format_id": "hls",
+                }
+            )
+        else:
+            fmt["ext"] = ext
+
         return {
             "id": video_id,
             "title": video_id,
-            "formats": [
-                {
-                    "url": url,
-                    "ext": ext,
-                    "http_headers": _media_headers(referer, origin, USER_AGENT),
-                }
-            ],
+            "formats": [fmt],
         }

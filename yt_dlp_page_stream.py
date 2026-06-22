@@ -89,6 +89,10 @@ def _apply_clipboard_urls(argv: list[str]) -> None:
 def main() -> None:
     _ensure_package_on_syspath()
 
+    from ytdlp_runtime import remove_pip_ytdlp
+
+    remove_pip_ytdlp(quiet=True)
+
     argv = sys.argv[:]
     do_update, show_version, use_clipboard = _consume_our_flags(argv)
     sys.argv = argv
@@ -114,13 +118,6 @@ def main() -> None:
         _apply_clipboard_urls(argv)
         sys.argv = argv
 
-    try:
-        from yt_dlp import main as ytdlp_main
-    except ImportError:
-        print(
-            "yt-dlp is not installed in this Python environment.\n"
-            "Install with: pip install -e .  (includes yt-dlp)",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-    ytdlp_main()
+    from ytdlp_runtime import exec_ytdlp
+
+    exec_ytdlp(argv)

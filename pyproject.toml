@@ -8,7 +8,7 @@ version = "2.2.5"
 description = "Plugin for yt-dlp: HLS/MP4 from video pages with Referer headers. Includes yt-dlp-ps, which runs full yt-dlp with the plugin enabled."
 readme = "README.md"
 requires-python = ">=3.8"
-dependencies = ["yt-dlp>=2023.7.6", "rich>=13.7.0", "certifi>=2024.2.2"]
+dependencies = ["rich>=13.7.0", "certifi>=2024.2.2"]
 license = { text = "MIT" }
 keywords = ["yt-dlp", "yt-dlp-plugin", "m3u8", "hls", "mp4", "referer", "page-stream"]
 
@@ -25,7 +25,7 @@ page-stream-extract = "convert_links:main"
 convert-links = "convert_links:main"
 
 [tool.setuptools]
-py-modules = ["cli_ui", "clipboard_input", "convert_links", "yt_dlp_page_stream", "update_check"]
+py-modules = ["cli_ui", "clipboard_input", "convert_links", "yt_dlp_page_stream", "update_check", "ytdlp_runtime"]
 
 [tool.setuptools.packages.find]
 where = ["."]

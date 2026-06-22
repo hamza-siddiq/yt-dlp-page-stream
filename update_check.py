@@ -13,6 +13,13 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 from urllib.request import Request, urlopen
 
+from ytdlp_runtime import (
+    brew_ytdlp_binary,
+    remove_pip_ytdlp,
+    resolve_ytdlp_binary,
+    ytdlp_version,
+)
+
 _CACHE_DIR = Path.home() / ".cache" / "yt-dlp-page-stream"
 _CACHE_FILE = _CACHE_DIR / "last_check.json"
 _CACHE_TTL = 24 * 60 * 60
@@ -209,8 +216,12 @@ def get_version_lines() -> List[str]:
     lines.append(
         f"yt-dlp-page-stream {installed_pkg or 'unknown'}"
     )
-    installed_ytdlp = _installed_version("yt-dlp")
-    lines.append(f"yt-dlp {installed_ytdlp or 'not installed'}")
+    installed_ytdlp = ytdlp_version()
+    ytdlp_bin = resolve_ytdlp_binary()
+    if installed_ytdlp and ytdlp_bin:
+        lines.append(f"yt-dlp {installed_ytdlp} ({ytdlp_bin})")
+    else:
+        lines.append(f"yt-dlp {installed_ytdlp or 'not installed'}")
     return lines
 
 
@@ -224,8 +235,14 @@ def print_version_info() -> None:
 def _version_snapshot() -> Dict[str, Optional[str]]:
     return {
         "pkg": _installed_version(_PKG_NAME),
-        "ytdlp": _installed_version("yt-dlp"),
+        "ytdlp": ytdlp_version(),
     }
+
+
+def _ytdlp_upgrade_step() -> _UpgradeStep:
+    if brew_ytdlp_binary():
+        return _UpgradeStep("brew upgrade yt-dlp", ["brew", "upgrade", "yt-dlp"])
+    return _UpgradeStep("pip install -U yt-dlp", _pip_argv("install", "-U", "yt-dlp"))
 
 
 def _run_upgrade_steps(
@@ -430,14 +447,17 @@ def _print_status_report(
         print_msg("  (no change since last check)", stderr=True, style="dim")
 
 
-def _gather_updates() -> Tuple[List[str], List[_UpgradeStep], Dict[str, Optional[str]]]:
-    """Return (messages, upgrade_steps, snapshot with latest remotes)."""
+def _gather_updates() -> Tuple[
+    List[str], List[_UpgradeStep], List[_UpgradeStep], Dict[str, Optional[str]]
+]:
+    """Return (messages, ytdlp_steps, pkg_steps, snapshot with latest remotes)."""
     messages: List[str] = []
-    upgrade_steps: List[_UpgradeStep] = []
+    ytdlp_steps: List[_UpgradeStep] = []
+    pkg_steps: List[_UpgradeStep] = []
 
     cached_remote = _cached_remote_latest()
 
-    installed_ytdlp = _installed_version("yt-dlp")
+    installed_ytdlp = ytdlp_version()
     latest_ytdlp_fresh = _pypi_latest_ytdlp()
     latest_ytdlp = latest_ytdlp_fresh or cached_remote.get("ytdlp")
     if (
@@ -445,16 +465,16 @@ def _gather_updates() -> Tuple[List[str], List[_UpgradeStep], Dict[str, Optional
         and latest_ytdlp_fresh
         and _version_lt(installed_ytdlp, latest_ytdlp_fresh)
     ):
+        upgrade_cmd = (
+            "brew upgrade yt-dlp"
+            if brew_ytdlp_binary()
+            else "pip install -U yt-dlp"
+        )
         messages.append(
-            f"yt-dlp {installed_ytdlp} is outdated (latest on PyPI: {latest_ytdlp_fresh}).\n"
-            "  pip install -U yt-dlp"
+            f"yt-dlp {installed_ytdlp} is outdated (latest: {latest_ytdlp_fresh}).\n"
+            f"  {upgrade_cmd}"
         )
-        upgrade_steps.append(
-            _UpgradeStep(
-                "pip install -U yt-dlp",
-                _pip_argv("install", "-U", "yt-dlp"),
-            )
-        )
+        ytdlp_steps.append(_ytdlp_upgrade_step())
 
     installed_pkg = _installed_version(_PKG_NAME)
     latest_pkg_fresh = _github_latest_pkg()
@@ -467,7 +487,7 @@ def _gather_updates() -> Tuple[List[str], List[_UpgradeStep], Dict[str, Optional
         if _is_git_clone():
             root = _pkg_root()
             upgrade = f"cd {root} && git pull && pip install -e ."
-            upgrade_steps.extend(
+            pkg_steps.extend(
                 [
                     _UpgradeStep(
                         f"git pull ({root})",
@@ -481,7 +501,7 @@ def _gather_updates() -> Tuple[List[str], List[_UpgradeStep], Dict[str, Optional
             )
         else:
             upgrade = f"pip install -U {_GIT_URL}"
-            upgrade_steps.append(
+            pkg_steps.append(
                 _UpgradeStep(upgrade, _pip_argv("install", "-U", _GIT_URL))
             )
         messages.append(
@@ -500,7 +520,7 @@ def _gather_updates() -> Tuple[List[str], List[_UpgradeStep], Dict[str, Optional
         "ytdlp_latest_cached": latest_ytdlp_fresh is None
         and bool(cached_remote.get("ytdlp")),
     }
-    return messages, upgrade_steps, snapshot
+    return messages, ytdlp_steps, pkg_steps, snapshot
 
 
 def run_update_flow(*, force: bool, prompt: bool) -> int:
@@ -541,9 +561,35 @@ def run_update_flow(*, force: bool, prompt: bool) -> int:
     else:
         check()
 
-    messages, upgrade_steps, snapshot = gathered[0], gathered[1], gathered[2]
+    messages, ytdlp_steps, pkg_steps, snapshot = (
+        gathered[0],
+        gathered[1],
+        gathered[2],
+        gathered[3],
+    )
 
-    if not messages:
+    if brew_ytdlp_binary():
+        remove_pip_ytdlp(quiet=True)
+
+    if ytdlp_steps:
+        before = _version_snapshot()
+        if force or prompt:
+            after = _run_upgrade_steps(ytdlp_steps, before)
+        else:
+            from cli_ui import print_msg
+
+            print_msg(
+                f"Auto-upgrading yt-dlp ({ytdlp_steps[0].display})...",
+                stderr=True,
+                style="cyan",
+            )
+            after = _run_upgrade_steps(ytdlp_steps, before)
+        remove_pip_ytdlp(quiet=True)
+        snapshot["ytdlp"] = after.get("ytdlp")
+
+    pkg_messages = [m for m in messages if m.startswith(f"{_PKG_NAME} ")]
+
+    if not pkg_messages:
         if force or prompt:
             _print_status_report(
                 snapshot,
@@ -559,7 +605,7 @@ def run_update_flow(*, force: bool, prompt: bool) -> int:
         )
         return 0
 
-    body = "\n\n".join(messages)
+    body = "\n\n".join(pkg_messages)
     console = get_console(stderr=True)
     if console:
         from rich.panel import Panel
@@ -569,15 +615,15 @@ def run_update_flow(*, force: bool, prompt: bool) -> int:
         )
     else:
         print("\nUpdates available:", file=sys.stderr)
-        for msg in messages:
+        for msg in pkg_messages:
             print(msg, file=sys.stderr)
             print(file=sys.stderr)
 
     should_prompt = prompt or _env_truthy("YT_DLP_PAGE_STREAM_UPDATE_PROMPT")
-    if should_prompt and upgrade_steps:
+    if should_prompt and pkg_steps:
         if confirm("Upgrade now?", default=False):
             before = _version_snapshot()
-            after = _run_upgrade_steps(upgrade_steps, before)
+            after = _run_upgrade_steps(pkg_steps, before)
             _write_cache(
                 {"pkg": after.get("pkg"), "ytdlp": after.get("ytdlp")},
                 remote=_fresh_remote_for_cache(snapshot),
